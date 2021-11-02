@@ -41,7 +41,7 @@ USE_HELM3 = true
 # ====================================================================================
 # Setup Images
 
-DOCKER_REGISTRY = crossplane
+DOCKER_REGISTRY = quay.io/arturobrzut
 IMAGES = provider-kubernetes provider-kubernetes-controller
 -include build/makelib/image.mk
 
