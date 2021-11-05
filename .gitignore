@@ -5,3 +5,7 @@
 /vendor
 /.vendor-new
 .vscode
+
+# ignore vscode files (debug config etc...)
+/.vscode
+/.idea

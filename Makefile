@@ -1,8 +1,27 @@
+#
+# Copyright 2021 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# ====================================================================================
 # Project Setup
 PROJECT_NAME := provider-kubernetes
 PROJECT_REPO := github.com/crossplane-contrib/$(PROJECT_NAME)
 
-PLATFORMS ?= linux_amd64 linux_arm64
+# IBM Crossplane supported platforms
+PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
+#PLATFORMS ?= linux_amd64 linux_arm64
 
 # -include will silently skip missing files, which allows us
 # to load those files with a target in the Makefile. If only
@@ -41,6 +60,7 @@ USE_HELM3 = true
 # ====================================================================================
 # Setup Images
 
+RELEASE_VERSION ?= $(shell cat RELEASE_VERSION)
 DOCKER_REGISTRY = quay.io/arturobrzut
 IMAGES = provider-kubernetes provider-kubernetes-controller
 -include build/makelib/image.mk
@@ -106,3 +126,7 @@ manifests:
 	@$(INFO) Deprecated. Run make generate instead.
 
 .PHONY: cobertura submodules fallthrough test-integration run manifests crds.clean
+
+# ====================================================================================
+# IBM Customization
+-include ibm/Makefile.common.mk
