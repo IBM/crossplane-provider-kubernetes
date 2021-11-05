@@ -17,13 +17,13 @@
 # ====================================================================================
 # Setup Project
 
-PLATFORMS := linux_amd64 linux_arm64
+PLATFORMS := linux_amd64 linux_ppc64le linux_s390x
 include ../../../build/makelib/common.mk
 
 # ====================================================================================
 #  Options
 IMAGE_NAME = crossplane-provider-kubernetes
-IMAGE = $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(RELEASE_VERSION)-$(ARCH)
+IMAGE = $(BUILD_REGISTRY)/$(IMAGE_NAME):$(RELEASE_VERSION)-$(ARCH)
 OSBASEIMAGE = scratch
 include ../../../build/makelib/image.mk
 

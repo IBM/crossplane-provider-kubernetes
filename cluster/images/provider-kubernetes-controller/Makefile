@@ -17,20 +17,13 @@
 # ====================================================================================
 # Setup Project
 
-PLATFORMS := linux_amd64 linux_arm64
+PLATFORMS := linux_amd64 linux_ppc64le linux_s390x
 include ../../../build/makelib/common.mk
-
-# ====================================================================================
-#  Options
-IMAGE_NAME = crossplane-provider-kubernetes-controller
-IMAGE = $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(RELEASE_VERSION)-$(ARCH)
-include ../../../build/makelib/image.mk
 
 # ===================================================================
 # Setup Docker buildx
 
 BUILDX = $(shell docker buildx version 2>/dev/null | grep buildx)
-BUILDX_VERSION = v0.6.1
 BUILDX_PLUGIN = ./bin/docker-buildx
 BUILDX_ARGS = --push --platform linux/$(ARCH)
 
@@ -48,10 +41,16 @@ ifeq (,$(BUILDX))
 endif
 
 # ====================================================================================
+#  Options
+IMAGE_NAME = crossplane-provider-kubernetes-controller
+IMAGE = $(BUILD_REGISTRY)/$(IMAGE_NAME):$(RELEASE_VERSION)-$(ARCH)
+include ../../../build/makelib/image.mk
+
+# ====================================================================================
 # Targets
 
 img.build: buildx
-	@$(INFO) docker build $(IMAGE)
+	@$(INFO) docker buildx build $(IMAGE)
 	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp $(OUTPUT_DIR)/bin/$(OS)_$(ARCH)/provider $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|BASEIMAGE|$(OSBASEIMAGE)|g' Dockerfile || $(FAIL)

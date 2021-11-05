@@ -21,7 +21,6 @@ PROJECT_REPO := github.com/crossplane-contrib/$(PROJECT_NAME)
 
 # IBM Crossplane supported platforms
 PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
-#PLATFORMS ?= linux_amd64 linux_arm64
 
 # -include will silently skip missing files, which allows us
 # to load those files with a target in the Makefile. If only
@@ -36,6 +35,7 @@ PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
 
 # ====================================================================================
 # Setup Go
+GO_SUPPORTED_VERSIONS = 1.16
 
 # Set a sane default so that the nprocs calculation below is less noisy on the initial
 # loading of this file
@@ -52,16 +52,21 @@ GO111MODULE = on
 -include build/makelib/golang.mk
 
 # ====================================================================================
-# Setup Kubernetes tools
+# Setup tools
+MANIFEST_TOOL_VERSION = v1.0.3
+BUILDX_VERSION = v0.6.1
 KIND_VERSION = v0.11.1
 USE_HELM3 = true
 -include build/makelib/k8s_tools.mk
 
 # ====================================================================================
 # Setup Images
-
 RELEASE_VERSION ?= $(shell cat RELEASE_VERSION)
-DOCKER_REGISTRY = quay.io/arturobrzut
+VERSION ?= $(RELEASE_VERSION)
+GIT_VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
+                 	   git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+
+DOCKER_REGISTRY = hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom
 IMAGES = provider-kubernetes provider-kubernetes-controller
 -include build/makelib/image.mk
 
