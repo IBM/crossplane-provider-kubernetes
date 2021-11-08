@@ -7,4 +7,4 @@ metadata:
       The Crossplane Kubernetes provider enables management of Kubernetes Objects.
 spec:
   controller:
-    image: quay.io/arturobrzut/provider-kubernetes-controller-amd64:VERSION
+    image: DOCKER_REGISTRY/crossplane-provider-kubernetes-controller:VERSION
