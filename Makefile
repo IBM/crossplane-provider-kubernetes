@@ -61,9 +61,9 @@ USE_HELM3 = true
 
 # ====================================================================================
 # Setup Images
-RELEASE_VERSION ?= $(shell cat RELEASE_VERSION)
-VERSION ?= $(RELEASE_VERSION)
-GIT_VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
+export RELEASE_VERSION=$(shell cat RELEASE_VERSION)
+export VERSION=$(RELEASE_VERSION)
+export GIT_VERSION=$(shell git describe --exact-match 2> /dev/null || \
                  	   git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 
 DOCKER_REGISTRY = hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom

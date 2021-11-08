@@ -20,44 +20,33 @@
 PLATFORMS := linux_amd64 linux_ppc64le linux_s390x
 include ../../../build/makelib/common.mk
 
-# ===================================================================
-# Setup Docker buildx
-
-BUILDX = $(shell docker buildx version 2>/dev/null | grep buildx)
-BUILDX_PLUGIN = ./bin/docker-buildx
-BUILDX_ARGS = --push --platform linux/$(ARCH)
-
-buildx:
-ifeq (,$(BUILDX))
-	@{ \
-	set -e ;\
-	mkdir -p bin ;\
-	echo "Downloading docker-buildx ...";\
-	curl -LO https://github.com/docker/buildx/releases/download/$(BUILDX_VERSION)/buildx-$(BUILDX_VERSION).$(OS)-$(ARCH);\
-	mv buildx-$(BUILDX_VERSION).$(OS)-$(ARCH) $(BUILDX_PLUGIN);\
-	chmod a+x $(BUILDX_PLUGIN);\
-	$(BUILDX_PLUGIN) create --use --platform linux/amd64,linux/ppc64le,linux/2390x;\
-	}
-endif
 
 # ====================================================================================
 #  Options
 IMAGE_NAME = crossplane-provider-kubernetes-controller
-IMAGE = $(BUILD_REGISTRY)/$(IMAGE_NAME):$(RELEASE_VERSION)-$(ARCH)
+IMAGE = $(BUILD_REGISTRY)/$(IMAGE_NAME):$(VERSION)-$(ARCH)
 include ../../../build/makelib/image.mk
 
 # ====================================================================================
 # Targets
 
-img.build: buildx
-	@$(INFO) docker buildx build $(IMAGE)
+img.build:
+ifneq (,$(BUILDX))
+	$(eval CONTAINER_CLI = docker buildx build --platform linux/$(ARCH))
+else
+ifneq (,$(BUILDX_PLUGIN))
+	$(eval CONTAINER_CLI = $(BUILDX_PLUGIN) build --platform linux/$(ARCH))
+else
+	$(eval CONTAINER_CLI = docker)
+endif
+endif
+	@$(INFO) $(CONTAINER_CLI) $(IMAGE)
 	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp $(OUTPUT_DIR)/bin/$(OS)_$(ARCH)/provider $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|BASEIMAGE|$(OSBASEIMAGE)|g' Dockerfile || $(FAIL)
-	@docker buildx build $(BUILDX_ARGS) \
-		$(BUILD_ARGS) \
+	@$(CONTAINER_CLI) $(BUILDX_ARGS) $(BUILD_ARGS) \
 		--build-arg ARCH=$(ARCH) \
 		--build-arg TINI_VERSION=$(TINI_VERSION) \
 		-t $(IMAGE) \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
-	@$(OK) docker build $(IMAGE)
+	@$(OK) $(CONTAINER_CLI) $(IMAGE)

@@ -23,7 +23,7 @@ include ../../../build/makelib/common.mk
 # ====================================================================================
 #  Options
 IMAGE_NAME = crossplane-provider-kubernetes
-IMAGE = $(BUILD_REGISTRY)/$(IMAGE_NAME):$(RELEASE_VERSION)-$(ARCH)
+IMAGE = $(BUILD_REGISTRY)/$(IMAGE_NAME):$(VERSION)-$(ARCH)
 OSBASEIMAGE = scratch
 include ../../../build/makelib/image.mk
 
@@ -31,16 +31,25 @@ include ../../../build/makelib/image.mk
 # Targets
 
 img.build:
-	@$(INFO) docker build $(IMAGE)
+ifneq (,$(BUILDX))
+	$(eval CONTAINER_CLI = docker buildx build --platform linux/$(ARCH))
+else
+ifneq (,$(BUILDX_PLUGIN))
+	$(eval CONTAINER_CLI = $(BUILDX_PLUGIN) build --platform linux/$(ARCH))
+else
+	$(eval CONTAINER_CLI = docker build)
+endif
+endif
+	@$(INFO) $(CONTAINER_CLI) build $(IMAGE)
 	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp -R ../../../package $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|BASEIMAGE|$(OSBASEIMAGE)|g' Dockerfile || $(FAIL)
+	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|DOCKER_REGISTRY|$(BUILD_REGISTRY)|g' package/crossplane.yaml || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|VERSION|$(VERSION)|g' package/crossplane.yaml || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && find package -type f -name '*.yaml' -exec cat {} >> 'package.yaml' \; -exec printf '\n---\n' \; || $(FAIL)
-	@docker build $(BUILD_ARGS) \
+	@$(CONTAINER_CLI) $(BUILDX_ARGS) $(BUILD_ARGS) \
 		--build-arg ARCH=$(ARCH) \
 		--build-arg TINI_VERSION=$(TINI_VERSION) \
 		-t $(IMAGE) \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
-	@docker push $(IMAGE)
-	@$(OK) docker build $(IMAGE)
+	@$(OK) $(CONTAINER_CLI) $(IMAGE)

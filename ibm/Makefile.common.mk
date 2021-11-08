@@ -34,6 +34,28 @@ config-docker: get-cluster-credentials
 	@ibm/scripts/config_docker.sh
 
 ############################################################
+# Setup Docker buildx
+############################################################
+
+export BUILDX=$(shell docker buildx version 2>/dev/null | grep buildx)
+export BUILDX_PLUGIN=$(shell pwd)/bin/docker-buildx
+
+buildx:
+ifeq (,$(BUILDX))
+	@{ \
+	set -e ;\
+	mkdir -p bin ;\
+	echo "Downloading docker-buildx ...";\
+	curl -LO https://github.com/docker/buildx/releases/download/$(BUILDX_VERSION)/buildx-$(BUILDX_VERSION).$(OS)-$(ARCH);\
+	mv buildx-$(BUILDX_VERSION).$(OS)-$(ARCH) $(BUILDX_PLUGIN);\
+	chmod a+x $(BUILDX_PLUGIN);\
+	$(BUILDX_PLUGIN) create --use --platform linux/amd64,linux/ppc64le,linux/2390x;\
+	}
+endif
+
+build.init: buildx
+
+############################################################
 # Prow section
 ############################################################
 
@@ -58,14 +80,14 @@ endif
 
 images: $(MANIFEST_TOOL)
 ifeq ($(BUILD_LOCALLY),1)
-	@make build.all RELEASE_VERSION=$(VERSION)
+	@make build.all BUILDX_ARGS=--push
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION) || $(FAIL)
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-$(GIT_VERSION) || $(FAIL)
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME)-controller:$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME)-controller:$(VERSION) || $(FAIL)
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME)-controller:$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME)-controller:$(VERSION)-$(GIT_VERSION) || $(FAIL)
 else
 	@make config-docker
-	@make build.all RELEASE_VERSION=$(VERSION)
+	@make build.all BUILDX_ARGS=--push
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION) || $(FAIL)
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-$(GIT_VERSION) || $(FAIL)
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME)-controller:$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME)-controller:$(VERSION) || $(FAIL)
