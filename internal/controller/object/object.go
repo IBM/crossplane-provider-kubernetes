@@ -18,7 +18,10 @@ package object
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -399,13 +402,19 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	if equality.Semantic.DeepEqual(last, desired) {
+		var cd managed.ConnectionDetails
 		c.logger.Debug("Up to date!")
 		// Set condition as available
 		cr.Status.SetConditions(xpv1.Available())
+		cd, err = c.connectionDetails(ctx, cr.Spec.ConnectionDetails)
+		// if err != nil {
+		//	return managed.ExternalObservation{}, errors.Wrap(err, "cannot get connection details")
+		// }
 		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: true,
-		}, nil
+			ResourceExists:    true,
+			ResourceUpToDate:  true,
+			ConnectionDetails: cd,
+		}, err
 	}
 
 	return managed.ExternalObservation{
@@ -497,6 +506,99 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
 	}
 
 	return errors.Wrap(resource.IgnoreNotFound(c.client.Delete(ctx, obj)), errDeleteObject)
+}
+
+func (c *external) connectionDetails(ctx context.Context, connDetails []v1alpha1.ConnectionDetail) (managed.ConnectionDetails, error) {
+
+	mcd := managed.ConnectionDetails{}
+
+	for _, cd := range connDetails {
+		ro := unstructuredFromObjectRef(cd.ObjectReference)
+		cdt := connectionDetailType(cd)
+		var value []byte
+		switch cdt {
+		case v1alpha1.ConnectionDetailTypeFromSecretKey:
+			var data map[string][]byte
+			s := &v1.Secret{}
+			// if ro.GetKind() == "" {
+			//	ro.SetKind("Secret")
+			// }
+
+			// if ro.GetKind() != "Secret" {
+			if ro.GetKind() != "Secret" && ro.GetKind() != "" {
+				return mcd, errors.Errorf("kind is set to %s but should be Secret when FromSecretKey field is defined", ro.GetKind())
+			}
+			// if ro.GetAPIVersion() == "" {
+			//	ro.SetAPIVersion("v1")
+			// }
+
+			// if err := c.client.Get(ctx, nn, s); client.IgnoreNotFound(err) != nil {
+			//	return nil, errors.Wrap(err, errGetSecret)
+			// }
+			// data = s.Data
+
+			if err := c.client.Get(ctx, types.NamespacedName{Name: ro.GetName(), Namespace: ro.GetNamespace()}, s); err != nil {
+				return mcd, errors.Wrap(err, "cannot get secret")
+			}
+
+			data = s.Data
+
+			if data[cd.FromSecretKey] == nil {
+				// We don't consider this an error because it's possible the
+				// key will still be written at some point in the future.
+				continue
+			}
+			value = data[cd.FromSecretKey]
+			// mcd[cd.ToConnectionSecretKey] = data[cd.FromSecretKey]
+
+		case v1alpha1.ConnectionDetailTypeFieldPath:
+			if err := c.client.Get(ctx, types.NamespacedName{Name: ro.GetName(), Namespace: ro.GetNamespace()}, &ro); err != nil {
+				return mcd, errors.Wrap(err, "cannot get object")
+			}
+			paved := fieldpath.Pave(ro.Object)
+			v, err := paved.GetValue(cd.FieldPath)
+			if err != nil {
+				return mcd, errors.Wrapf(err, "failed to get value at fieldPath: %s", cd.FieldPath)
+			}
+			s := fmt.Sprintf("%v", v)
+			value = []byte(s)
+			// prevent secret data being encoded twice
+			// if cd.Kind == "Secret" && cd.APIVersion == "v1" && strings.HasPrefix(cd.FieldPath, "data") {
+			//	fv, err = base64.StdEncoding.DecodeString(s)
+			//	if err != nil {
+			//		return mcd, errors.Wrap(err, "failed to decode secret data")
+			//	}
+			//}
+		}
+		mcd[cd.ToConnectionSecretKey] = value
+	}
+	//	fmt.Println(connDetails)
+	//
+	//	return managed.ConnectionDetails{
+	//		"credentials": []byte("123field"),
+	//		"password":    []byte("hehe"),
+	//	}
+	return mcd, nil
+}
+
+func unstructuredFromObjectRef(r v1.ObjectReference) unstructured.Unstructured {
+	u := unstructured.Unstructured{}
+	u.SetAPIVersion(r.APIVersion)
+	u.SetKind(r.Kind)
+	u.SetName(r.Name)
+	u.SetNamespace(r.Namespace)
+	return u
+}
+
+func connectionDetailType(d v1alpha1.ConnectionDetail) v1alpha1.ConnectionDetailType {
+	switch {
+	case d.FromSecretKey != "":
+		return v1alpha1.ConnectionDetailTypeFromSecretKey
+	// case d.FieldPath != "":
+	//  	return v1alpha1.ConnectionDetailTypeFieldPath
+	default:
+		return v1alpha1.ConnectionDetailTypeFieldPath
+	}
 }
 
 func getDesired(obj *v1alpha1.Object) (*unstructured.Unstructured, error) {
