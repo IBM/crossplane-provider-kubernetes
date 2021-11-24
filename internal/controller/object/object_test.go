@@ -504,66 +504,66 @@ func Test_helmExternal_Observe(t *testing.T) {
 				err: nil,
 			},
 		},
-		// "UpToDateNameDefaultsToObjectName": {
-		//	args: args{
-		//		mg: kubernetesObject(func(obj *v1alpha1.Object) {
-		//			obj.Spec.ForProvider.Manifest.Raw = []byte(`{
-		//		    "apiVersion": "v1",
-		//		    "kind": "Namespace" }`)
-		//		}),
-		//		client: resource.ClientApplicator{
-		//			Client: &test.MockClient{
-		//				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
-		//					*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
-		//						Object: map[string]interface{}{
-		//							"apiVersion": "v1",
-		//							"kind":       "Namespace",
-		//							"metadata": map[string]interface{}{
-		//								"name": testObjectName,
-		//								"annotations": map[string]interface{}{
-		//									corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace"}`,
-		//								},
-		//							},
-		//						},
-		//					}
-		//					return nil
-		//				}),
-		//			},
-		//		},
-		//	},
-		//	want: want{
-		//		out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true},
-		//		err: nil,
-		//	},
-		// },
-		// "UpToDate": {
-		//	args: args{
-		//		mg: kubernetesObject(),
-		//		client: resource.ClientApplicator{
-		//			Client: &test.MockClient{
-		//				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
-		//					*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
-		//						Object: map[string]interface{}{
-		//							"apiVersion": "v1",
-		//							"kind":       "Namespace",
-		//							"metadata": map[string]interface{}{
-		//								"name": "crossplane-system",
-		//								"annotations": map[string]interface{}{
-		//									corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
-		//								},
-		//							},
-		//						},
-		//					}
-		//					return nil
-		//				}),
-		//			},
-		//		},
-		//	},
-		//	want: want{
-		//		out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true},
-		//		err: nil,
-		//	},
-		// },
+		"UpToDateNameDefaultsToObjectName": {
+			args: args{
+				mg: kubernetesObject(func(obj *v1alpha1.Object) {
+					obj.Spec.ForProvider.Manifest.Raw = []byte(`{
+				    "apiVersion": "v1",
+				    "kind": "Namespace" }`)
+				}),
+				client: resource.ClientApplicator{
+					Client: &test.MockClient{
+						MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+							*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
+								Object: map[string]interface{}{
+									"apiVersion": "v1",
+									"kind":       "Namespace",
+									"metadata": map[string]interface{}{
+										"name": testObjectName,
+										"annotations": map[string]interface{}{
+											corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace"}`,
+										},
+									},
+								},
+							}
+							return nil
+						}),
+					},
+				},
+			},
+			want: want{
+				out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{}},
+				err: nil,
+			},
+		},
+		"UpToDate": {
+			args: args{
+				mg: kubernetesObject(),
+				client: resource.ClientApplicator{
+					Client: &test.MockClient{
+						MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+							*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
+								Object: map[string]interface{}{
+									"apiVersion": "v1",
+									"kind":       "Namespace",
+									"metadata": map[string]interface{}{
+										"name": "crossplane-system",
+										"annotations": map[string]interface{}{
+											corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
+										},
+									},
+								},
+							}
+							return nil
+						}),
+					},
+				},
+			},
+			want: want{
+				out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{}},
+				err: nil,
+			},
+		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
