@@ -19,16 +19,21 @@ package main
 import (
 	"context"
 	"fmt"
+
+	"os"
+	"path/filepath"
+
+	"gopkg.in/alecthomas/kingpin.v2"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"os"
-	"path/filepath"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	ca "k8s.io/client-go/tools/cache"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"gopkg.in/alecthomas/kingpin.v2"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
@@ -62,30 +67,59 @@ func main() {
 	cfg, err := ctrl.GetConfig()
 	kingpin.FatalIfError(err, "Cannot get API server rest config")
 
-	var namespaces []string
-	cfn, err := client.New(cfg, client.Options{})
-	if err != nil {
-		log.Debug("Cannot create client for nss", "error", err)
+	// IBM Patch: reduce cluster permission
+	// we want to restrict cache to watch only a given list of namespaces
+	// instead of all (cluster scoped). List of namespaces is read
+	// from NamespaceScope resource, if it exists. Changes in this resource
+	// should restart Provider's pod.
+	watchNamespace := os.Getenv("WATCH_NAMESPACE")
+	if watchNamespace == "" {
+		kingpin.FatalIfError(err, "Empty WATCH_NAMESPACE env variable")
 	}
-	nss := &unstructured.Unstructured{}
-	nss.SetGroupVersionKind(schema.GroupVersionKind{Version: "operator.ibm.com/v1", Kind: "NamespaceScope"})
-	if err := cfn.Get(context.Background(), types.NamespacedName{Namespace: "ibm-common-services", Name: "common-service"}, nss); err != nil {
-		kingpin.FatalIfError(err, "Cannot get NamespaceScope common-service")
-	}
+	// By default set at least watchNamespace
+	namespaces := []string{watchNamespace}
+	nssName := "common-service"
 
-	spec := nss.Object["spec"].(map[string]interface{})
-	ms := spec["namespaceMembers"]
-	if ms != nil {
-		for _, m := range ms.([]interface{}) {
-			namespaces = append(namespaces, fmt.Sprintf("%v", m))
+	cfn, err := client.New(cfg, client.Options{})
+	kingpin.FatalIfError(err, "Cannot create client for reading NamespaceScope")
+
+	nfn, err := namespacesFromNss(cfn, watchNamespace, nssName)
+	// Proceed with informer when no error found during NamespaceScope reading
+	if err == nil {
+		namespaces = append(namespaces, nfn...)
+		// Start informer to watch for changes in NamespaceScope resource
+		dc, err := dynamic.NewForConfig(cfg)
+		kingpin.FatalIfError(err, "Cannot create client for observing NamespaceScope")
+
+		factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dc, 0, watchNamespace, nil)
+		informer := factory.ForResource(schema.GroupVersionResource{
+			Group:    "operator.ibm.com",
+			Version:  "v1",
+			Resource: "namespacescopes",
+		})
+		stopper := make(chan struct{})
+		defer close(stopper)
+		// Handle each update causing the pod to restart.
+		handlers := ca.ResourceEventHandlerFuncs{
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				if newObj.(*unstructured.Unstructured).GetName() == nssName {
+					log.Debug("Observed NamespaceScope has been updated, restarting")
+					os.Exit(1)
+				}
+			},
 		}
+		informer.Informer().AddEventHandler(handlers)
+		go informer.Informer().Run(stopper)
+		log.Debug(fmt.Sprintf("Starting watch on namespaceScope %s", nssName))
 	}
+	log.Debug(fmt.Sprintf("Creating multinamespaced cache with namespaces: %+q", namespaces))
+	// IBM Patch end: reduce cluster permission
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		LeaderElection:   *leaderElection,
 		LeaderElectionID: "crossplane-leader-election-provider-kubernetes",
 		SyncPeriod:       syncInterval,
-		NewCache:		  cache.MultiNamespacedCacheBuilder(namespaces),
+		NewCache:         cache.MultiNamespacedCacheBuilder(namespaces),
 	})
 	kingpin.FatalIfError(err, "Cannot create controller manager")
 
@@ -93,4 +127,29 @@ func main() {
 	kingpin.FatalIfError(apis.AddToScheme(mgr.GetScheme()), "Cannot add Template APIs to scheme")
 	kingpin.FatalIfError(controller.Setup(mgr, log, rl, *pollInterval), "Cannot setup Template controllers")
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
+}
+
+func namespacesFromNss(cfn client.Client, watchNamespace string, nssName string) ([]string, error) {
+	var namespaces []string
+	nss := &unstructured.Unstructured{}
+	nss.SetGroupVersionKind(schema.GroupVersionKind{Version: "operator.ibm.com/v1", Kind: "NamespaceScope"})
+	if err := cfn.Get(context.Background(), types.NamespacedName{Namespace: watchNamespace, Name: nssName}, nss); err != nil {
+		if errors.IsNotFound(err) {
+			// If not found return empty array and no error to allow for further steps.
+			return namespaces, nil
+		}
+		// Block further steps because probably there is no such CRD on the cluster.
+		return namespaces, err
+	}
+	spec := nss.Object["spec"].(map[string]interface{})
+	members := spec["namespaceMembers"]
+	if members != nil {
+		for _, m := range members.([]interface{}) {
+			if m.(string) == watchNamespace {
+				continue
+			}
+			namespaces = append(namespaces, m.(string))
+		}
+	}
+	return namespaces, nil
 }

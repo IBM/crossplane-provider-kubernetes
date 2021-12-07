@@ -402,6 +402,13 @@ func Test_helmExternal_Observe(t *testing.T) {
 		out managed.ExternalObservation
 		err error
 	}
+	// s := &corev1.Secret{
+	//	Data: map[string][]byte{
+	//		"password":                                    []byte("123QWE"),
+	//		"user":                                    []byte("admin123"),
+	//	},
+	// }
+
 	cases := map[string]struct {
 		args
 		want
@@ -562,6 +569,117 @@ func Test_helmExternal_Observe(t *testing.T) {
 			want: want{
 				out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{}},
 				err: nil,
+				//	},
+				// },
+				// "UpToDateConnDetailsConstantValues": {
+				//	args: args{
+				//		mg: kubernetesObject(func(obj *v1alpha1.Object) {
+				//			obj.Spec.ConnectionDetails = []v1alpha1.ConnectionDetail{
+				//				{
+				//					ToConnectionSecretKey: "field.key.not.parsed.as.path",
+				//					Value:                 "constant-value",
+				//				},
+				//				{
+				//					ToConnectionSecretKey: "anotherKey",
+				//					Value:                 "AnotherValue",
+				//				},
+				//			}
+				//		}),
+				//		client: resource.ClientApplicator{
+				//			Client: &test.MockClient{
+				//				MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+				//					*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
+				//						Object: map[string]interface{}{
+				//							"apiVersion": "v1",
+				//							"kind":       "Namespace",
+				//							"metadata": map[string]interface{}{
+				//								"name": "crossplane-system",
+				//								"annotations": map[string]interface{}{
+				//									corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
+				//								},
+				//							},
+				//						},
+				//					}
+				//					return nil
+				//				}),
+				//			},
+				//		},
+				//	},
+				//	want: want{
+				//		out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{
+				//					"field.key.not.parsed.as.path": []byte("constant-value"),
+				//					"anotherKey": []byte("AnotherValue"),
+				//		}},
+				//		err: nil,
+				//	},
+				// },
+				// "UpToDateConnDetailsFromSecretKey": {
+				//	args: args{
+				//		mg: kubernetesObject(func(obj *v1alpha1.Object) {
+				//			obj.Spec.ConnectionDetails = []v1alpha1.ConnectionDetail{
+				//				{
+				//					ObjectReference:       corev1.ObjectReference{
+				//						Kind:            "Secret",
+				//						Namespace:       "cross",
+				//						Name:            "myservice-secret",
+				//						APIVersion:      "v1",
+				//					},
+				//					FromSecretKey:         "password",
+				//					ToConnectionSecretKey: "outputPassword",
+				//				},
+				//				{
+				//					ObjectReference:       corev1.ObjectReference{
+				//						Kind:            "Secret",
+				//						Namespace:       "cross",
+				//						Name:            "myservice-secret",
+				//						APIVersion:      "v1",
+				//					},
+				//					FromSecretKey:         "user",
+				//					ToConnectionSecretKey: "outputUser",
+				//				},
+				//			}
+				//		}),
+				//		client: resource.ClientApplicator{
+				//			Client: &test.MockClient{
+				//
+				//				MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
+				//				//if sobj, ok := obj.(*corev1.Secret); ok {
+				//					if key.Name == "myservice-secret" && key.Namespace == "cross" {
+				//						sobj, _ := obj.(*corev1.Secret)
+				//						sobj.Data = s.Data
+				//						//s.DeepCopyInto(sobj)
+				//						return nil
+				//					}
+				//
+				//
+				//					*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
+				//						Object: map[string]interface{}{
+				//							"apiVersion": "v1",
+				//							"kind":       "Namespace",
+				//							"metadata": map[string]interface{}{
+				//								"name": "crossplane-system",
+				//								"annotations": map[string]interface{}{
+				//									corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
+				//								},
+				//							},
+				//						},
+				//					}
+				//					return nil
+				//				//}
+				//				//t.Errorf("wrong secret is queried xx %s %s", key, obj)
+				//				//return errors.New("asdasd")//errBoom
+				//			},
+				//
+				//			},
+				//
+				//		},
+				//	},
+				//	want: want{
+				//		out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{
+				//			"outputPassword": []byte("123QWE"),
+				//			"outputUser": []byte("admin123"),
+				//		}},
+				//		err: nil,
 			},
 		},
 	}
