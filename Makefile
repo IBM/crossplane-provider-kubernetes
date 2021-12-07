@@ -1,8 +1,26 @@
+#
+# Copyright 2021 IBM Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# ====================================================================================
 # Project Setup
 PROJECT_NAME := provider-kubernetes
 PROJECT_REPO := github.com/crossplane-contrib/$(PROJECT_NAME)
 
-PLATFORMS ?= linux_amd64 linux_arm64
+# IBM Crossplane supported platforms
+PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
 
 # -include will silently skip missing files, which allows us
 # to load those files with a target in the Makefile. If only
@@ -17,6 +35,7 @@ PLATFORMS ?= linux_amd64 linux_arm64
 
 # ====================================================================================
 # Setup Go
+GO_SUPPORTED_VERSIONS = 1.16
 
 # Set a sane default so that the nprocs calculation below is less noisy on the initial
 # loading of this file
@@ -33,15 +52,21 @@ GO111MODULE = on
 -include build/makelib/golang.mk
 
 # ====================================================================================
-# Setup Kubernetes tools
+# Setup tools
+MANIFEST_TOOL_VERSION = v1.0.3
+BUILDX_VERSION = v0.6.1
 KIND_VERSION = v0.11.1
 USE_HELM3 = true
 -include build/makelib/k8s_tools.mk
 
 # ====================================================================================
 # Setup Images
+export RELEASE_VERSION=$(shell cat RELEASE_VERSION)
+export VERSION=$(RELEASE_VERSION)
+export GIT_VERSION=$(shell git describe --exact-match 2> /dev/null || \
+                 	   git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 
-DOCKER_REGISTRY = quay.io/arturobrzut
+DOCKER_REGISTRY = hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom
 IMAGES = provider-kubernetes provider-kubernetes-controller
 -include build/makelib/image.mk
 
@@ -106,3 +131,7 @@ manifests:
 	@$(INFO) Deprecated. Run make generate instead.
 
 .PHONY: cobertura submodules fallthrough test-integration run manifests crds.clean
+
+# ====================================================================================
+# IBM Customization
+-include ibm/Makefile.common.mk

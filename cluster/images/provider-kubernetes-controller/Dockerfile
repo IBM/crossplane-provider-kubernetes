@@ -1,5 +1,4 @@
 FROM BASEIMAGE
-RUN apk --no-cache add ca-certificates bash
 
 ADD provider /usr/local/bin/crossplane-kubernetes-provider
 
