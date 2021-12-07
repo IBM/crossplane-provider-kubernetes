@@ -87,10 +87,7 @@ type ObjectStatus struct {
 // This value will be saved in connection secret.
 type ConnectionDetail struct {
 	v1.ObjectReference    `json:",inline"`
-	DecodeBase64          bool   `json:"decodeBase64,omitempty"`
-	JSONPath              string `json:"JSONPath,omitempty"`
 	Value                 string `json:"value,omitempty"`
-	FromSecretKey         string `json:"fromSecretKey,omitempty"`
 	ToConnectionSecretKey string `json:"toConnectionSecretKey,omitempty"`
 }
 
@@ -99,9 +96,8 @@ type ConnectionDetailType string
 
 // ConnectionDetailType types.
 const (
-	ConnectionDetailTypeFromSecretKey ConnectionDetailType = "FromSecretKey"
-	ConnectionDetailTypeFieldPath     ConnectionDetailType = "FieldPath"
-	ConnectionDetailTypeFromValue     ConnectionDetailType = "FromValue"
+	ConnectionDetailTypeFieldPath ConnectionDetailType = "FieldPath"
+	ConnectionDetailTypeFromValue ConnectionDetailType = "FromValue"
 )
 
 // +kubebuilder:object:root=true

@@ -18,11 +18,10 @@ package object
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 
@@ -518,25 +517,6 @@ func (c *external) connectionDetails(ctx context.Context, cr *v1alpha1.Object) (
 				return nil, err
 			}
 			value = []byte(cd.Value)
-		case v1alpha1.ConnectionDetailTypeFromSecretKey:
-			if err := validateConnectionDetailsFromSecretKey(cd); err != nil {
-				return nil, err
-			}
-			var data map[string][]byte
-			s := v1.Secret{}
-			s.Name = cd.ObjectReference.Name
-			s.Namespace = cd.ObjectReference.Namespace
-			ro := unstructuredFromObjectRef(cd.ObjectReference)
-			ro.SetGroupVersionKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Secret"})
-
-			if err := c.client.Get(ctx, types.NamespacedName{Name: ro.GetName(), Namespace: ro.GetNamespace()}, &ro); client.IgnoreNotFound(err) != nil {
-				return nil, errors.Wrap(err, "cannot get secret")
-			}
-			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(ro.UnstructuredContent(), &s); err != nil {
-				return nil, errors.Wrap(err, "cannot convert to secret")
-			}
-			data = s.Data
-			value = data[cd.FromSecretKey]
 		case v1alpha1.ConnectionDetailTypeFieldPath:
 			if err := validateConnectionDetailsFieldPath(cd); err != nil {
 				return nil, err
@@ -546,12 +526,19 @@ func (c *external) connectionDetails(ctx context.Context, cr *v1alpha1.Object) (
 				return nil, errors.Wrap(err, "cannot get object")
 			}
 			paved := fieldpath.Pave(ro.Object)
-			v1, err := paved.GetValue(cd.FieldPath)
+			v, err := paved.GetValue(cd.FieldPath)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get value at fieldPath: %s", cd.FieldPath)
 			}
-			s := fmt.Sprintf("%v", v1)
+			s := fmt.Sprintf("%v", v)
 			value = []byte(s)
+			// prevent secret data being encoded twice
+			if cd.Kind == "Secret" && cd.APIVersion == "v1" && strings.HasPrefix(cd.FieldPath, "data") {
+				value, err = base64.StdEncoding.DecodeString(s)
+				if err != nil {
+					return mcd, errors.Wrap(err, "failed to decode secret data")
+				}
+			}
 		}
 		if value != nil {
 			mcd[cd.ToConnectionSecretKey] = value
@@ -564,19 +551,6 @@ func validateConnectionDetailsFromValue(cd v1alpha1.ConnectionDetail) error {
 	switch {
 	case cd.Value == "":
 		return errorMissingFieldInConnectionDetails("value", cd)
-	case cd.ToConnectionSecretKey == "":
-		return errorMissingFieldInConnectionDetails("toConnectionSecretKey", cd)
-	default:
-		return nil
-	}
-}
-
-func validateConnectionDetailsFromSecretKey(cd v1alpha1.ConnectionDetail) error {
-	switch {
-	case cd.FromSecretKey == "":
-		return errorMissingFieldInConnectionDetails("fromSecretKey", cd)
-	case cd.Kind != "" && cd.Kind != "Secret":
-		return errors.Errorf("kind is set to '%s' but should be 'Secret' when FromSecretKey field is defined", cd.Kind)
 	case cd.ToConnectionSecretKey == "":
 		return errorMissingFieldInConnectionDetails("toConnectionSecretKey", cd)
 	default:
@@ -617,8 +591,6 @@ func connectionDetailType(d v1alpha1.ConnectionDetail) v1alpha1.ConnectionDetail
 	switch {
 	case d.Value != "":
 		return v1alpha1.ConnectionDetailTypeFromValue
-	case d.FromSecretKey != "":
-		return v1alpha1.ConnectionDetailTypeFromSecretKey
 	default:
 		return v1alpha1.ConnectionDetailTypeFieldPath
 	}

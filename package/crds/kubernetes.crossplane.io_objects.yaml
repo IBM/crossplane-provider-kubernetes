@@ -56,13 +56,9 @@ spec:
                     value should be copied. This value will be saved in connection
                     secret.
                   properties:
-                    JSONPath:
-                      type: string
                     apiVersion:
                       description: API version of the referent.
                       type: string
-                    decodeBase64:
-                      type: boolean
                     fieldPath:
                       description: 'If referring to a piece of an object instead of
                         an entire object, this string should contain a valid JSON/Go
@@ -75,8 +71,6 @@ spec:
                         only to have some well-defined way of referencing a part of
                         an object. TODO: this design is not final and this field is
                         subject to change in the future.'
-                      type: string
-                    fromSecretKey:
                       type: string
                     kind:
                       description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
