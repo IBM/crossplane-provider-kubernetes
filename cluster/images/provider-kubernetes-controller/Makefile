@@ -56,4 +56,5 @@ endif
 		--build-arg TINI_VERSION=$(TINI_VERSION) \
 		-t $(IMAGE_LATEST) \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
+	@$(CONTAINER_CLI) push $(IMAGE)
 	@$(OK) $(CONTAINER_CLI) $(IMAGE)
