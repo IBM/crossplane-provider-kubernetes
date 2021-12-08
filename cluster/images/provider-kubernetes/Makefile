@@ -22,8 +22,9 @@ include ../../../build/makelib/common.mk
 
 # ====================================================================================
 #  Options
-IMAGE_NAME = crossplane-provider-kubernetes
-IMAGE = $(BUILD_REGISTRY)/$(IMAGE_NAME):$(VERSION)-$(ARCH)
+IMAGE_NAME = provider-kubernetes
+IMAGE = $(BUILD_REGISTRY)/crossplane-$(IMAGE_NAME):$(VERSION)-$(ARCH)
+IMAGE_LATEST = $(BUILD_REGISTRY)/$(IMAGE_NAME)-$(ARCH):latest
 OSBASEIMAGE = scratch
 include ../../../build/makelib/image.mk
 
@@ -51,5 +52,10 @@ endif
 		--build-arg ARCH=$(ARCH) \
 		--build-arg TINI_VERSION=$(TINI_VERSION) \
 		-t $(IMAGE) \
+		$(IMAGE_TEMP_DIR) || $(FAIL)
+	@$(CONTAINER_CLI) $(BUILDX_ARGS) $(BUILD_ARGS) \
+		--build-arg ARCH=$(ARCH) \
+		--build-arg TINI_VERSION=$(TINI_VERSION) \
+		-t $(IMAGE_LATEST) \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) $(CONTAINER_CLI) $(IMAGE)
