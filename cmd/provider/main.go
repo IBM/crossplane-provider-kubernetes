@@ -138,7 +138,7 @@ func namespacesFromNss(cfn client.Client, watchNamespace string, nssName string)
 			// If not found return empty array and no error to allow for further steps.
 			return namespaces, nil
 		}
-		// Block further steps because probably there is no such CRD on the cluster.
+		// Block further steps because probably there is no such CustomResourceDefinition on the cluster.
 		return namespaces, err
 	}
 	spec := nss.Object["spec"].(map[string]interface{})
