@@ -43,7 +43,8 @@ endif
 endif
 	@$(INFO) $(CONTAINER_CLI) build $(IMAGE)
 	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
-	@cp -R ../../../package $(IMAGE_TEMP_DIR) || $(FAIL)
+	@mkdir $(IMAGE_TEMP_DIR)/package/
+	@cp ../../../package/crossplane.yaml $(IMAGE_TEMP_DIR)/package/crossplane.yaml || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|BASEIMAGE|$(OSBASEIMAGE)|g' Dockerfile || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|DOCKER_REGISTRY|$(BUILD_REGISTRY)|g' package/crossplane.yaml || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|VERSION|$(VERSION)|g' package/crossplane.yaml || $(FAIL)
