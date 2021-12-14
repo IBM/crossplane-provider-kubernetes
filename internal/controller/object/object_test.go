@@ -404,14 +404,14 @@ func Test_helmExternal_Observe(t *testing.T) {
 	}
 
 	r := unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion":      "myapi.version",
-		"kind":            "Cluster",
+		"apiVersion": "myapi.version",
+		"kind":       "Cluster",
 		"metadata": map[string]interface{}{
-			"namespace":       "cross",
-			"name":            "myclusterNEW",
+			"namespace": "cross",
+			"name":      "myclusterNEW",
 		},
 		"spec": map[string]interface{}{
-			"interestingfield":       "88888",
+			"interestingfield": "88888",
 		},
 	}}
 
@@ -575,98 +575,98 @@ func Test_helmExternal_Observe(t *testing.T) {
 			want: want{
 				out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{}},
 				err: nil,
-					},
-				},
-				"UpToDateConnDetailsConstantValues": {
-					args: args{
-						mg: kubernetesObject(func(obj *v1alpha1.Object) {
-							obj.Spec.ConnectionDetails = []v1alpha1.ConnectionDetail{
-								{
-									ToConnectionSecretKey: "field.key.not.parsed.as.path",
-									Value:                 "constant-value",
-								},
-								{
-									ToConnectionSecretKey: "anotherKey",
-									Value:                 "AnotherValue",
-								},
-							}
-						}),
-						client: resource.ClientApplicator{
-							Client: &test.MockClient{
-								MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
-									*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
-										Object: map[string]interface{}{
-											"apiVersion": "v1",
-											"kind":       "Namespace",
-											"metadata": map[string]interface{}{
-												"name": "crossplane-system",
-												"annotations": map[string]interface{}{
-													corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
-												},
-											},
-										},
-									}
-									return nil
-								}),
-							},
+			},
+		},
+		"UpToDateConnDetailsConstantValues": {
+			args: args{
+				mg: kubernetesObject(func(obj *v1alpha1.Object) {
+					obj.Spec.ConnectionDetails = []v1alpha1.ConnectionDetail{
+						{
+							ToConnectionSecretKey: "field.key.not.parsed.as.path",
+							Value:                 "constant-value",
 						},
-					},
-					want: want{
-						out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{
-									"field.key.not.parsed.as.path": []byte("constant-value"),
-									"anotherKey": []byte("AnotherValue"),
-						}},
-						err: nil,
-					},
-				},
-				"UpToDateConnDetailsFromResource": {
-					args: args{
-						mg: kubernetesObject(func(obj *v1alpha1.Object) {
-							obj.Spec.ConnectionDetails = []v1alpha1.ConnectionDetail{
-								{
-									ObjectReference:       corev1.ObjectReference{
-										Kind:            "Cluster",
-										Namespace:       "cross",
-										Name:            "mycluster",
-										APIVersion:      "myapi.version",
-										FieldPath:       "spec.interestingfield",
+						{
+							ToConnectionSecretKey: "anotherKey",
+							Value:                 "AnotherValue",
+						},
+					}
+				}),
+				client: resource.ClientApplicator{
+					Client: &test.MockClient{
+						MockGet: test.NewMockGetFn(nil, func(obj client.Object) error {
+							*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
+								Object: map[string]interface{}{
+									"apiVersion": "v1",
+									"kind":       "Namespace",
+									"metadata": map[string]interface{}{
+										"name": "crossplane-system",
+										"annotations": map[string]interface{}{
+											corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
+										},
 									},
-
-									ToConnectionSecretKey: "fieldinconnectionsecret",
 								},
 							}
+							return nil
 						}),
-						client: resource.ClientApplicator{
-							Client: &test.MockClient{
+					},
+				},
+			},
+			want: want{
+				out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{
+					"field.key.not.parsed.as.path": []byte("constant-value"),
+					"anotherKey":                   []byte("AnotherValue"),
+				}},
+				err: nil,
+			},
+		},
+		"UpToDateConnDetailsFromResource": {
+			args: args{
+				mg: kubernetesObject(func(obj *v1alpha1.Object) {
+					obj.Spec.ConnectionDetails = []v1alpha1.ConnectionDetail{
+						{
+							ObjectReference: corev1.ObjectReference{
+								Kind:       "Cluster",
+								Namespace:  "cross",
+								Name:       "mycluster",
+								APIVersion: "myapi.version",
+								FieldPath:  "spec.interestingfield",
+							},
 
-								MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
-									if key.Name == "mycluster" && key.Namespace == "cross" {
-										*obj.(*unstructured.Unstructured) = r
-										return nil
-									}
+							ToConnectionSecretKey: "fieldinconnectionsecret",
+						},
+					}
+				}),
+				client: resource.ClientApplicator{
+					Client: &test.MockClient{
 
-									*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
-										Object: map[string]interface{}{
-											"apiVersion": "v1",
-											"kind":       "Namespace",
-											"metadata": map[string]interface{}{
-												"name": "crossplane-system",
-												"annotations": map[string]interface{}{
-													corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
-												},
-											},
+						MockGet: func(_ context.Context, key client.ObjectKey, obj client.Object) error {
+							if key.Name == "mycluster" && key.Namespace == "cross" {
+								*obj.(*unstructured.Unstructured) = r
+								return nil
+							}
+
+							*obj.(*unstructured.Unstructured) = unstructured.Unstructured{
+								Object: map[string]interface{}{
+									"apiVersion": "v1",
+									"kind":       "Namespace",
+									"metadata": map[string]interface{}{
+										"name": "crossplane-system",
+										"annotations": map[string]interface{}{
+											corev1.LastAppliedConfigAnnotation: `{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"crossplane-system"}}`,
 										},
-									}
-									return nil
-							},
-							},
+									},
+								},
+							}
+							return nil
 						},
 					},
-					want: want{
-						out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{
-							"fieldinconnectionsecret": []byte("88888"),
-						}},
-						err: nil,
+				},
+			},
+			want: want{
+				out: managed.ExternalObservation{ResourceExists: true, ResourceUpToDate: true, ConnectionDetails: managed.ConnectionDetails{
+					"fieldinconnectionsecret": []byte("88888"),
+				}},
+				err: nil,
 			},
 		},
 	}
