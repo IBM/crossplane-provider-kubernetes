@@ -70,7 +70,7 @@ endif
 export BUILD_REGISTRY=$(DOCKER_REGISTRY)
 
 export OSBASEIMAGE=registry.access.redhat.com/ubi8/ubi-minimal:latest
-IMAGE_NAME ?= crossplane-provider-kubernetes
+IMAGE_NAME ?= ibm-crossplane-provider-kubernetes
 
 ifeq ($(HOSTOS),darwin)
 MANIFEST_TOOL_ARGS ?= --username $(DOCKER_USERNAME) --password $(DOCKER_PASSWORD)

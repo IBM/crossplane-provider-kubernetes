@@ -24,7 +24,7 @@ include ../../../build/makelib/common.mk
 # ====================================================================================
 #  Options
 IMAGE_NAME = provider-kubernetes-controller
-IMAGE = $(BUILD_REGISTRY)/crossplane-$(IMAGE_NAME):$(VERSION)-$(ARCH)
+IMAGE = $(BUILD_REGISTRY)/ibm-crossplane-$(IMAGE_NAME):$(VERSION)-$(ARCH)
 IMAGE_LATEST = $(BUILD_REGISTRY)/$(IMAGE_NAME)-$(ARCH):latest
 
 include ../../../build/makelib/image.mk
