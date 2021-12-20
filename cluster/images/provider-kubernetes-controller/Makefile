@@ -24,8 +24,7 @@ include ../../../build/makelib/common.mk
 # ====================================================================================
 #  Options
 IMAGE_NAME = provider-kubernetes-controller
-IMAGE = $(BUILD_REGISTRY)/crossplane-$(IMAGE_NAME):$(VERSION)-$(ARCH)
-IMAGE_LATEST = $(BUILD_REGISTRY)/$(IMAGE_NAME)-$(ARCH):latest
+IMAGE = $(BUILD_REGISTRY)/ibm-crossplane-$(IMAGE_NAME):$(VERSION)-$(ARCH)
 
 include ../../../build/makelib/image.mk
 
@@ -34,26 +33,25 @@ include ../../../build/makelib/image.mk
 
 img.build:
 ifneq (,$(BUILDX))
-	$(eval CONTAINER_CLI = docker buildx build --platform linux/$(ARCH))
+	$(eval CONTAINER_CLI = docker buildx build --platform linux/$(ARCH) $(BUILDX_ARGS))
+else
+ifneq (,$(shell which podman))
+	$(eval CONTAINER_CLI = podman build --arch $(ARCH) --format docker)
 else
 ifneq (,$(BUILDX_PLUGIN))
-	$(eval CONTAINER_CLI = $(BUILDX_PLUGIN) build --platform linux/$(ARCH))
+	$(eval CONTAINER_CLI = $(BUILDX_PLUGIN) build --platform linux/$(ARCH) $(BUILDX_ARGS))
 else
-	$(eval CONTAINER_CLI = docker)
+	$(eval CONTAINER_CLI = docker build)
+endif
 endif
 endif
 	@$(INFO) $(CONTAINER_CLI) $(IMAGE)
 	@cp Dockerfile $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cp $(OUTPUT_DIR)/bin/$(OS)_$(ARCH)/provider $(IMAGE_TEMP_DIR) || $(FAIL)
 	@cd $(IMAGE_TEMP_DIR) && $(SED_CMD) 's|BASEIMAGE|$(OSBASEIMAGE)|g' Dockerfile || $(FAIL)
-	@$(CONTAINER_CLI) $(BUILDX_ARGS) $(BUILD_ARGS) \
+	@$(CONTAINER_CLI) $(BUILD_ARGS) \
 		--build-arg ARCH=$(ARCH) \
 		--build-arg TINI_VERSION=$(TINI_VERSION) \
 		-t $(IMAGE) \
-		$(IMAGE_TEMP_DIR) || $(FAIL)
-	@$(CONTAINER_CLI) $(BUILDX_ARGS) $(BUILD_ARGS) \
-		--build-arg ARCH=$(ARCH) \
-		--build-arg TINI_VERSION=$(TINI_VERSION) \
-		-t $(IMAGE_LATEST) \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) $(CONTAINER_CLI) $(IMAGE)

@@ -18,7 +18,12 @@ package object
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
@@ -398,20 +403,21 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return c.HandleLastAppliedUpdate(cr)
 	}
 
+	var cd managed.ConnectionDetails
+	resourceUpToDate := false
 	if equality.Semantic.DeepEqual(last, desired) {
 		c.logger.Debug("Up to date!")
 		// Set condition as available
 		cr.Status.SetConditions(xpv1.Available())
-		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: true,
-		}, nil
+		resourceUpToDate = true
+		cd, err = c.connectionDetails(ctx, cr)
 	}
 
 	return managed.ExternalObservation{
-		ResourceExists:   true,
-		ResourceUpToDate: false,
-	}, nil
+		ResourceExists:    true,
+		ResourceUpToDate:  resourceUpToDate,
+		ConnectionDetails: cd,
+	}, err
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
@@ -497,6 +503,97 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
 	}
 
 	return errors.Wrap(resource.IgnoreNotFound(c.client.Delete(ctx, obj)), errDeleteObject)
+}
+
+func (c *external) connectionDetails(ctx context.Context, cr *v1alpha1.Object) (managed.ConnectionDetails, error) { // nolint:gocyclo
+	connDetails := cr.Spec.ConnectionDetails
+	mcd := managed.ConnectionDetails{}
+	for _, cd := range connDetails {
+		cdt := connectionDetailType(cd)
+		var value []byte
+		switch cdt {
+		case v1alpha1.ConnectionDetailTypeFromValue:
+			if err := validateConnectionDetailsFromValue(cd); err != nil {
+				return nil, err
+			}
+			value = []byte(cd.Value)
+		case v1alpha1.ConnectionDetailTypeFieldPath:
+			if err := validateConnectionDetailsFieldPath(cd); err != nil {
+				return nil, err
+			}
+			ro := unstructuredFromObjectRef(cd.ObjectReference)
+			if err := c.client.Get(ctx, types.NamespacedName{Name: ro.GetName(), Namespace: ro.GetNamespace()}, &ro); client.IgnoreNotFound(err) != nil {
+				return nil, errors.Wrap(err, "cannot get object")
+			}
+			paved := fieldpath.Pave(ro.Object)
+			v, err := paved.GetValue(cd.FieldPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get value at fieldPath: %s", cd.FieldPath)
+			}
+			s := fmt.Sprintf("%v", v)
+			value = []byte(s)
+			// prevent secret data being encoded twice
+			if cd.Kind == "Secret" && cd.APIVersion == "v1" && strings.HasPrefix(cd.FieldPath, "data") {
+				value, err = base64.StdEncoding.DecodeString(s)
+				if err != nil {
+					return mcd, errors.Wrap(err, "failed to decode secret data")
+				}
+			}
+		}
+		if value != nil {
+			mcd[cd.ToConnectionSecretKey] = value
+		}
+	}
+	return mcd, nil
+}
+
+func validateConnectionDetailsFromValue(cd v1alpha1.ConnectionDetail) error {
+	switch {
+	case cd.Value == "":
+		return errorMissingFieldInConnectionDetails("value", cd)
+	case cd.ToConnectionSecretKey == "":
+		return errorMissingFieldInConnectionDetails("toConnectionSecretKey", cd)
+	default:
+		return nil
+	}
+}
+
+func validateConnectionDetailsFieldPath(cd v1alpha1.ConnectionDetail) error {
+	switch {
+	case cd.FieldPath == "":
+		return errorMissingFieldInConnectionDetails("fieldPath", cd)
+	case cd.APIVersion == "":
+		return errorMissingFieldInConnectionDetails("apiVersion", cd)
+	case cd.Kind == "":
+		return errorMissingFieldInConnectionDetails("kind", cd)
+	case cd.Name == "":
+		return errorMissingFieldInConnectionDetails("name", cd)
+	case cd.ToConnectionSecretKey == "":
+		return errorMissingFieldInConnectionDetails("toConnectionSecretKey", cd)
+	}
+	return nil
+}
+
+func errorMissingFieldInConnectionDetails(m string, c v1alpha1.ConnectionDetail) error {
+	return errors.Errorf("'%s' is missing in following connectionDetails - %s", m, c.String())
+}
+
+func unstructuredFromObjectRef(r v1.ObjectReference) unstructured.Unstructured {
+	u := unstructured.Unstructured{}
+	u.SetAPIVersion(r.APIVersion)
+	u.SetKind(r.Kind)
+	u.SetName(r.Name)
+	u.SetNamespace(r.Namespace)
+	return u
+}
+
+func connectionDetailType(d v1alpha1.ConnectionDetail) v1alpha1.ConnectionDetailType {
+	switch {
+	case d.Value != "":
+		return v1alpha1.ConnectionDetailTypeFromValue
+	default:
+		return v1alpha1.ConnectionDetailTypeFieldPath
+	}
 }
 
 func getDesired(obj *v1alpha1.Object) (*unstructured.Unstructured, error) {

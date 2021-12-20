@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/fieldpath"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -71,8 +72,9 @@ type Reference struct {
 // A ObjectSpec defines the desired state of a Object.
 type ObjectSpec struct {
 	xpv1.ResourceSpec `json:",inline"`
-	References        []Reference      `json:"references,omitempty"`
-	ForProvider       ObjectParameters `json:"forProvider"`
+	References        []Reference        `json:"references,omitempty"`
+	ForProvider       ObjectParameters   `json:"forProvider"`
+	ConnectionDetails []ConnectionDetail `json:"connectionDetails,omitempty"`
 }
 
 // A ObjectStatus represents the observed state of a Object.
@@ -80,6 +82,23 @@ type ObjectStatus struct {
 	xpv1.ResourceStatus `json:",inline"`
 	AtProvider          ObjectObservation `json:"atProvider,omitempty"`
 }
+
+// ConnectionDetail points to a resource, from which a value should be copied.
+// This value will be saved in connection secret.
+type ConnectionDetail struct {
+	v1.ObjectReference    `json:",inline"`
+	Value                 string `json:"value,omitempty"`
+	ToConnectionSecretKey string `json:"toConnectionSecretKey,omitempty"`
+}
+
+// A ConnectionDetailType is a type of connection detail.
+type ConnectionDetailType string
+
+// ConnectionDetailType types.
+const (
+	ConnectionDetailTypeFieldPath ConnectionDetailType = "FieldPath"
+	ConnectionDetailTypeFromValue ConnectionDetailType = "FromValue"
+)
 
 // +kubebuilder:object:root=true
 
