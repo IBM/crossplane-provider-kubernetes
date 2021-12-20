@@ -408,7 +408,7 @@ func Test_helmExternal_Observe(t *testing.T) {
 		"kind":       "Cluster",
 		"metadata": map[string]interface{}{
 			"namespace": "cross",
-			"name":      "myclusterNEW",
+			"name":      "mycluster",
 		},
 		"spec": map[string]interface{}{
 			"interestingfield": "88888",
