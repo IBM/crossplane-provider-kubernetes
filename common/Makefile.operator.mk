@@ -200,7 +200,7 @@ global-pull-secrets: ## Update global pull secrets to use artifactory registries
 build-catalog: build-bundle-image build-catalog-source ## Build bundle image and catalog source image for development
 
 # Build bundle image
-build-bundle-image: ../bundle
+build-bundle-image: bundle
 	@cp -f bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml /tmp/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml
 	@$(YQ) d -i bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml "spec.replaces"
 	@$(SED) -i "s|quay.io/opencloudio|$(REGISTRY)|g" bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml
@@ -230,13 +230,4 @@ bundle-manifests:
 	$(OPERATOR_SDK) bundle validate ./bundle
 	@./common/scripts/adjust_manifests.sh $(VERSION) $(PREVIOUS_VERSION)
 
-############################################################
-##@ Help
-############################################################
-
-help: ## Display this help
-	@echo "Usage:\n  make \033[36m<target>\033[0m"
-	@awk 'BEGIN {FS = ":.*##"}; \
-		/^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } \
-		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
