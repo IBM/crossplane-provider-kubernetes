@@ -17,7 +17,17 @@ metadata:
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
-  customresourcedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - kind: Object
+      name: objects.kubernetes.crossplane.io
+      version: v1alpha1
+    - kind: ProviderConfig
+      name: providerconfigs.kubernetes.crossplane.io
+      version: v1alpha1
+    - kind: ProviderConfigUsage
+      name: providerconfigusages.kubernetes.crossplane.io
+      version: v1alpha1
   description: Operator installing CRDs and RBAC resources for Crossplane Kubernetes Provider
   displayName: Crossplane Kubernetes Provider Operator
   icon:
@@ -25,7 +35,7 @@ spec:
     mediatype: image/png
   install:
     spec:
-      deployments: []
+      deployments: null
     strategy: ""
   installModes:
   - supported: true
