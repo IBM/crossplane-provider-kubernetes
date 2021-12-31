@@ -197,6 +197,9 @@ global-pull-secrets: ## Update global pull secrets to use artifactory registries
 ##@ Build
 ############################################################
 
+build-controller-image:
+	@cd cluster/images/provider-kubernetes-controller && make img.build
+
 build-catalog: build-bundle-image build-catalog-source ## Build bundle image and catalog source image for development
 
 # Build bundle image
