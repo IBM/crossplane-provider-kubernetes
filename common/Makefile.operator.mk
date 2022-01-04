@@ -204,12 +204,12 @@ build-catalog: build-bundle-image build-catalog-source ## Build bundle image and
 
 # Build bundle image
 build-bundle-image: bundle
-	@cp -f bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml /tmp/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml
-	@$(YQ) d -i bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml "spec.replaces"
-	@$(SED) -i "s|quay.io/opencloudio|$(REGISTRY)|g" bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml
+	@cp -f bundle/manifests/$(OPERATOR_IMAGE_NAME).clusterserviceversion.yaml /tmp/$(OPERATOR_IMAGE_NAME).clusterserviceversion.yaml
+	@$(YQ) d -i bundle/manifests/$(OPERATOR_IMAGE_NAME).clusterserviceversion.yaml "spec.replaces"
+	@$(SED) -i "s|quay.io/opencloudio|$(REGISTRY)|g" bundle/manifests/$(OPERATOR_IMAGE_NAME).clusterserviceversion.yaml
 	$(CONTAINER_CLI) $(CONTAINER_BUILD_CMD) -f bundle.Dockerfile -t $(REGISTRY)/$(BUNDLE_IMAGE_NAME):$(VERSION)-$(ARCH) .
 	$(CONTAINER_CLI) push $(REGISTRY)/$(BUNDLE_IMAGE_NAME):$(VERSION)-$(ARCH)
-	@mv /tmp/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml
+	@mv /tmp/$(OPERATOR_IMAGE_NAME).clusterserviceversion.yaml bundle/manifests/$(OPERATOR_IMAGE_NAME).clusterserviceversion.yaml
 
 # Build catalog source
 build-catalog-source: opm build-bundle-image
