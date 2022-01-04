@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	providerName            = "kubernetes-test" 
+	providerName            = "kubernetes-test"
 	providerSecretName      = "kubernetes-test-secret"
 	providerSecretNamespace = "kubernetes-test-secret-namespace"
 
