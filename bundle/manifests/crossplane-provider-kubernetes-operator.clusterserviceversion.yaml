@@ -248,5 +248,5 @@ spec:
   version: 1.4.0
   relatedImages:
     - name: IBM_CROSSPLANE_PROVIDER_KUBERNETES_OPERATOR_IMAGE
-      image: quay.io/opencloudio/ibm-crossplane-provider-kubernetes:1.4.0
+      image: quay.io/opencloudio/ibm-crossplane-provider-kubernetes-controller:1.4.0
   replaces: crossplane-provider-kubernetes-operator.v0.0.0
