@@ -18,7 +18,7 @@
 #### Helper functions
 ############################################################
 
-SCRIPT_NAME=$(basename $0)
+SCRIPT_NAME=$(basename "$0")
 # text colours
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -107,7 +107,7 @@ function setup() {
 function cleanup() {
     info "cleaning up"
     cd "$START_WD"
-    exit $1
+    exit "$1"
 }
 
 # usage: build_multiarch <dockerfile> <tags array>;
@@ -147,7 +147,7 @@ declare -A IMG_NAMES
 declare -A IMAGES
 
 OPERATOR_NAME="crossplane-provider-kubernetes-operator"
-OPERATOR_IMG="crossplane-provider-kubernetes-controller"
+OPERATOR_IMG="ibm-crossplane-provider-kubernetes-controller"
 IMG_NAMES=([$OPERATOR_IMG]="scratch")
 BUNDLE_METADATA_OPTS="--channels=v3 --default-channel=v3"
 OPERATOR_BUNDLE="crossplane-provider-kubernetes-operator-bundle"
@@ -169,7 +169,7 @@ function set_image_digest() {
             "$REGISTRY_URL/$NAME/$TAG/manifest.json?properties" |
             grep "docker.manifest.digest" | cut -f4 -d\")
         if [[ $DIGEST == "" ]]; then
-            erro "could not find digest for $NAME:$TAG:$REG"
+            erro "could not find digest for $REGISTRY_URI/$NAME:$TAG"
         fi
     fi
     info "digest of $NAME:$TAG:$REG: $DIGEST"
@@ -199,7 +199,7 @@ function check_image_digests() {
     if [[ $RESP == "" ]]; then
         local CHANGED=false
         info "pulling previous image with tag ${CATSRC_TAGS[0]}"
-        $CONTAINER_CLI pull $OLD_CUSTOM_CATSRC
+        $CONTAINER_CLI pull "$OLD_CUSTOM_CATSRC"
         info "looking for changes in images.."
         for IMG in "${!IMG_NAMES[@]}"; do
             local FORMAT="'{{index .Config.Labels \"$IMG\"}}'"
@@ -220,8 +220,8 @@ function check_image_digests() {
 
 # usage: prepare_operator_bundle_yamls;
 function prepare_operator_bundle_yamls() {
-    local MANIFEST_CSV_YAML="./config/manifests/bases/$OPERATOR_IMG.clusterserviceversion.yaml"
-    local CSV_YAML="./bundle/manifests/$OPERATOR_IMG.clusterserviceversion.yaml"
+    local MANIFEST_CSV_YAML="./config/manifests/bases/$OPERATOR_NAME.clusterserviceversion.yaml"
+    local CSV_YAML="./bundle/manifests/$OPERATOR_NAME.clusterserviceversion.yaml"
     local METADATA_YAML="./bundle/metadata/annotations.yaml"
     # manifests
     $YQ w -i "$MANIFEST_CSV_YAML" "metadata.annotations.\"olm.skipRange\"" ">=1.0.0 <$TIMESTAMP.0.0"
@@ -233,7 +233,7 @@ function prepare_operator_bundle_yamls() {
     # operand images
     $YQ w -i "$CSV_YAML" "spec.install.spec.deployments[0].spec.template.spec.containers[0].image" "${IMAGES[$OPERATOR_IMG]}"
     # annotations
-    $YQ w -i "$METADATA_YAML" "annotations.\"operators.operatorframework.io.bundle.package.v1\"" "$OPERATOR_NAME-app"
+    $YQ w -i "$METADATA_YAML" "annotations.\"operators.operatorframework.io.bundle.package.v1\"" "$OPERATOR_NAME"
     $OPERATOR_SDK bundle validate ./bundle
 }
 
@@ -283,7 +283,7 @@ function build_operator_bundle() {
 COMMON_SERVICE_BASE_REGISTRY="hyc-cloud-private-daily-docker-local.artifactory.swg-devops.com/ibmcom"
 COMMON_SERVICE_BASE_CATSRC="$COMMON_SERVICE_BASE_REGISTRY/ibm-common-service-catalog:latest-validated"
 NEW_CUSTOM_CATSRC="crossplane-kubernetes-provider-common-service-catalog"
-PACKAGES="$OPERATOR_IMG-app"
+PACKAGES="$OPERATOR_IMG"
 
 DB_NAME="index.db"
 PATH_TO_DB=./database
@@ -307,9 +307,12 @@ function prepare_db() {
 function list_packages() {
     local BUNDLE
     local PACKAGE
-    for BUNDLE in $(echo $1 | tr , ' '); do
-        PACKAGE=$(echo $1 | cut -f1 -d: | cut -f3 -d/ )
-        PACKAGES="$PACKAGES,$PACKAGE-app"
+    for BUNDLE in $(echo "$1" | tr , ' '); do
+        PACKAGE=$(echo "$1" | cut -f1 -d: | cut -f3 -d/ )
+        if [[ "$PACKAGE" != *provider* ]]; then
+          PACKAGE="$PACKAGE-app"
+        fi
+        PACKAGES="$PACKAGES,$PACKAGE"
     done
 }
 
@@ -395,34 +398,34 @@ while [[ "$#" -gt 0 ]]; do
     -ot | --operand-tags)
         if [[ "$1" != "" && "$1" != -* ]]; then
             OPERAND_VERSION_LIST=$(echo $1 | tr , ' ')
+            shift
         fi
-        shift
         ;;
     -ac | --artifactory-creds)
         if [[ "$1" != "" && "$1" != -* ]]; then
             ARTIFACTORY_USER=$(echo $1 | cut -f1 -d:)
             ARTIFACTORY_TOKEN=$(echo $1 | cut -f2 -d:)
+            shift
         fi
-        shift
         ;;
     -r | --registry)
         if [[ "$1" != "" && "$1" != -* ]]; then
             REGISTRY="$1"
+            shift
         fi
-        shift
         ;;
     -t | --tag)
         if [[ "$1" != "" && "$1" != -* && "$1" != "default" ]]; then
             USER_TAG="$1"
             OPERATOR_BUNDLE_IMG="$SCRATCH_REG/$OPERATOR_BUNDLE:$USER_TAG"
+            shift
         fi
-        shift
         ;;
     -b | --bundles)
         if [[ "$1" != "" && "$1" != -* ]]; then
             BUNDLES="$1"
+            shift
         fi
-        shift
         ;;
     -f | --force)
         FORCE=true
