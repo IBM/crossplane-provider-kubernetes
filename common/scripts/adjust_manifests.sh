@@ -17,7 +17,7 @@
 
 OPERATOR_VERSION=$1
 PREVIOUS_VERSION=$2
-OPERATOR_NAME=ibm-crossplane-operator
+OPERATOR_NAME=crossplane-provider-kubernetes-operator
 BUNDLE_DOCKERFILE_PATH=bundle.Dockerfile
 BUNDLE_ANNOTATIONS_PATH=bundle/metadata/annotations.yaml
 OPERANDREQUEST_PATH=config/manifests/operandrequest.json
