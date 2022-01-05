@@ -136,6 +136,9 @@ manifests:
 
 .PHONY: cobertura submodules fallthrough test-integration run manifests crds.clean
 
+build:
+	go version
+
 # ====================================================================================
 # IBM Customization
 -include ibm/Makefile.common.mk
