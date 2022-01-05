@@ -75,6 +75,10 @@ IMAGES = provider-kubernetes provider-kubernetes-controller
 -include build/makelib/local.mk
 
 # ====================================================================================
+# Include operator targets
+-include common/Makefile.operator.mk
+
+# ====================================================================================
 # Targets
 
 # run `make help` to see the targets and options
