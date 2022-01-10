@@ -78,7 +78,7 @@ else
 MANIFEST_TOOL_ARGS ?=
 endif
 
-images: $(MANIFEST_TOOL) build-bundle-image
+images: build-bundle-image $(MANIFEST_TOOL)
 ifeq ($(BUILD_LOCALLY),1)
 	@make build.all BUILDX_ARGS=--push
 	@$(MANIFEST_TOOL) $(MANIFEST_TOOL_ARGS) push from-args --platforms linux/amd64,linux/ppc64le,linux/s390x --template $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION)-ARCH --target $(DOCKER_REGISTRY)/$(IMAGE_NAME):$(VERSION) || $(FAIL)
