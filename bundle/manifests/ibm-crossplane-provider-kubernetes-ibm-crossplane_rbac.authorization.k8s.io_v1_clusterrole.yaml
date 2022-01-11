@@ -13,16 +13,7 @@ rules:
   resources:
   - objects
   - objects/status
-  - providerconfigs
-  - providerconfigs/status
-  verbs:
-  - list
-  - watch
-  - update
-- apiGroups:
-  - kubernetes.crossplane.io
-  resources:
-  - providerconfigusages
+  - objects/finalizers
   verbs:
   - create
   - delete
@@ -31,12 +22,3 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - update
-  - patch
-  - delete

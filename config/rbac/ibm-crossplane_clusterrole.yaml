@@ -8,17 +8,6 @@ metadata:
     app.kubernetes.io/name: ibm-crossplane-provider-kubernetes
 rules:
   - verbs:
-      - list
-      - watch
-      - update
-    apiGroups:
-      - kubernetes.crossplane.io
-    resources:
-      - objects
-      - objects/status
-      - providerconfigs
-      - providerconfigs/status
-  - verbs:
       - create
       - delete
       - get
@@ -29,13 +18,6 @@ rules:
     apiGroups:
       - kubernetes.crossplane.io
     resources:
-      - providerconfigusages
-  - apiGroups:
-      - ''
-    resources:
-      - events
-    verbs:
-      - create
-      - update
-      - patch
-      - delete
+      - objects
+      - objects/status
+      - objects/finalizers
