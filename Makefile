@@ -67,7 +67,7 @@ export GIT_VERSION=$(shell git describe --exact-match 2> /dev/null || \
                  	   git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 
 DOCKER_REGISTRY = hyc-cloud-private-scratch-docker-local.artifactory.swg-devops.com/ibmcom
-IMAGES = provider-kubernetes provider-kubernetes-operator
+IMAGES = provider-kubernetes provider-kubernetes-controller
 -include build/makelib/image.mk
 
 # ====================================================================================
