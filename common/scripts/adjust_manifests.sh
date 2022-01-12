@@ -17,11 +17,11 @@
 
 OPERATOR_VERSION=$1
 PREVIOUS_VERSION=$2
-OPERATOR_NAME=crossplane-provider-kubernetes-operator
+OPERATOR_NAME=ibm-crossplane-provider-kubernetes-operator
 BUNDLE_DOCKERFILE_PATH=bundle.Dockerfile
 BUNDLE_ANNOTATIONS_PATH=bundle/metadata/annotations.yaml
 OPERANDREQUEST_PATH=config/manifests/operandrequest.json
-CSV_PATH=bundle/manifests/crossplane-provider-kubernetes-operator.clusterserviceversion.yaml
+CSV_PATH=bundle/manifests/ibm-crossplane-provider-kubernetes-operator.clusterserviceversion.yaml
 
 if [[ -z "${OPERATOR_VERSION}" || -z "${PREVIOUS_VERSION}" ]]; then
     echo "Usage: $0 OPERATOR_VERSION PREVIOUS_VERSION"
@@ -52,7 +52,7 @@ if [[ -f "${CSV_PATH}" ]]; then
     yq w ${CSV_PATH} "metadata.annotations[olm.skipRange]" ">=1.0.0 <${OPERATOR_VERSION}" 1<>${CSV_PATH}
 
     yq w ${CSV_PATH} "spec.relatedImages[0] name" "IBM_CROSSPLANE_PROVIDER_KUBERNETES_OPERATOR_IMAGE" 1<>${CSV_PATH}
-    yq w ${CSV_PATH} "spec.relatedImages[0] image" "quay.io/opencloudio/ibm-crossplane-provider-kubernetes-controller:${OPERATOR_VERSION}" 1<>${CSV_PATH}
+    yq w ${CSV_PATH} "spec.relatedImages[0] image" "quay.io/opencloudio/ibm-crossplane-provider-kubernetes-operator:${OPERATOR_VERSION}" 1<>${CSV_PATH}
 
     # replaces
     yq w ${CSV_PATH} "spec.replaces" "${OPERATOR_NAME}.v${PREVIOUS_VERSION}" 1<>${CSV_PATH}

@@ -23,7 +23,7 @@ include ../../../build/makelib/common.mk
 
 # ====================================================================================
 #  Options
-IMAGE_NAME = provider-kubernetes-controller
+IMAGE_NAME = provider-kubernetes-operator
 IMAGE = $(BUILD_REGISTRY)/ibm-crossplane-$(IMAGE_NAME):$(VERSION)-$(ARCH)
 
 include ../../../build/makelib/image.mk
