@@ -146,11 +146,11 @@ declare -A IMG_REGS
 declare -A IMG_NAMES
 declare -A IMAGES
 
-OPERATOR_NAME="crossplane-provider-kubernetes-operator"
-OPERATOR_IMG="ibm-crossplane-provider-kubernetes-controller"
+OPERATOR_NAME="ibm-crossplane-provider-kubernetes-operator"
+OPERATOR_IMG="ibm-crossplane-provider-kubernetes-operator"
 IMG_NAMES=([$OPERATOR_IMG]="scratch")
 BUNDLE_METADATA_OPTS="--channels=v3 --default-channel=v3"
-OPERATOR_BUNDLE="crossplane-provider-kubernetes-operator-bundle"
+OPERATOR_BUNDLE="ibm-crossplane-provider-kubernetes-operator-bundle"
 OPERATOR_BUNDLE_IMG="$SCRATCH_REG/$OPERATOR_BUNDLE:$TIMESTAMP"
 
 # usage: set_image_digest <image name> <image tag> <image registry>;
