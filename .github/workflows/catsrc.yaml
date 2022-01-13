@@ -15,6 +15,9 @@
 #
 name: catsrc
 
+env:
+  RUNNING_IN_CI: 'true'
+
 on:
   workflow_dispatch:
     inputs:
