@@ -96,7 +96,6 @@ function setup() {
     fi
     RELEASE_VERSION=$(cat RELEASE_VERSION)
     CROSSPLANE_BRANCH=$(git branch --show-current)
-    echo "branch: $CROSSPLANE_BRANCH"
     TEMP_WD=$(mktemp -d)
     START_WD=$(pwd)
     info "temp dir: $TEMP_WD"
@@ -376,13 +375,14 @@ function create_index_tags() {
             "$REGISTRY/$NEW_CUSTOM_CATSRC:$RELEASE_VERSION"
             "$REGISTRY/$NEW_CUSTOM_CATSRC:$RELEASE_VERSION-$TIMESTAMP"
         )
-    else
+    elif [[ "$CROSSPLANE_BRANCH" != "" ]]; then
         CATSRC_TAGS=(
             "$REGISTRY/$NEW_CUSTOM_CATSRC:$CROSSPLANE_BRANCH"
             "$REGISTRY/$NEW_CUSTOM_CATSRC:$CROSSPLANE_BRANCH-$TIMESTAMP"
         )
+    else
+      CATSRC_TAGS=("$REGISTRY/$NEW_CUSTOM_CATSRC:$TIMESTAMP")
     fi
-    echo "${CATSRC_TAGS[@]}"
 }
 
 ############################################################
