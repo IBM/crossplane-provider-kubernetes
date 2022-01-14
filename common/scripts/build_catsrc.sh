@@ -381,6 +381,7 @@ function create_index_tags() {
             "$REGISTRY/$NEW_CUSTOM_CATSRC:$CROSSPLANE_BRANCH-$TIMESTAMP"
         )
     fi
+    echo "${CATSRC_TAGS[@]}"
 }
 
 ############################################################
