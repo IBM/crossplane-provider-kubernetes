@@ -55,6 +55,8 @@ if [[ -f "${CSV_PATH}" ]]; then
     yq w ${CSV_PATH} "spec.relatedImages[0] image" "quay.io/opencloudio/ibm-crossplane-provider-kubernetes-operator:${OPERATOR_VERSION}" 1<>${CSV_PATH}
 
     # replaces
-    yq w ${CSV_PATH} "spec.replaces" "${OPERATOR_NAME}.v${PREVIOUS_VERSION}" 1<>${CSV_PATH}
+    # REMOVE FOR FIRST RELEASE
+    # yq w ${CSV_PATH} "spec.replaces" "${OPERATOR_NAME}.v${PREVIOUS_VERSION}" 1<>${CSV_PATH}
+    
     # yq d -i ${CSV_PATH} "spec.replaces" # temporary adjustment for moving to v3 channel
 fi
