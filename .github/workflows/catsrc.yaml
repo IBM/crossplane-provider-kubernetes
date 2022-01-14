@@ -15,15 +15,12 @@
 #
 name: catsrc
 
-env:
-  RUNNING_IN_CI: 'true'
-
 on:
   workflow_dispatch:
     inputs:
       tag:
         description: "Tag for the resulting catalog source image"
-        required: false
+        required: true
         default: "default"
       force:
         description: "Force build even if no changes in images"
@@ -40,6 +37,7 @@ on:
       - master
 
 env:
+  RUNNING_IN_CI: 'true'
   GO_VERSION: "1.16"
   GOLANGCI_VERSION: "v1.31"
 
