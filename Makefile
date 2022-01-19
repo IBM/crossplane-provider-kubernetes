@@ -35,7 +35,7 @@ PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
 
 # ====================================================================================
 # Setup Go
-GO_SUPPORTED_VERSIONS = 1.16.15|1.17.6
+GO_SUPPORTED_VERSIONS = 1.16.15|1.17.7
 
 # Set a sane default so that the nprocs calculation below is less noisy on the initial
 # loading of this file
@@ -135,6 +135,9 @@ manifests:
 	@$(INFO) Deprecated. Run make generate instead.
 
 .PHONY: cobertura submodules fallthrough test-integration run manifests crds.clean
+
+build:
+	go version
 
 # ====================================================================================
 # IBM Customization
