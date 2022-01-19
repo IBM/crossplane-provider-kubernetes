@@ -35,7 +35,6 @@ PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
 
 # ====================================================================================
 # Setup Go
-GO_SUPPORTED_VERSIONS = 1.16.13|1.17.6
 
 # Set a sane default so that the nprocs calculation below is less noisy on the initial
 # loading of this file
@@ -106,16 +105,6 @@ crds.clean:
 	@$(OK) cleaned generated CRDs
 
 generate.done: crds.clean
-
-# Ensure a PR is ready for review.
-reviewable: generate lint
-	@go mod tidy
-
-# Ensure branch is clean.
-check-diff: reviewable
-	@$(INFO) checking that branch is clean
-	@test -z "$$(git status --porcelain)" || $(FAIL)
-	@$(OK) branch is clean
 
 # integration tests
 e2e.run: test-integration
