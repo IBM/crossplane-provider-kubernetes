@@ -35,7 +35,6 @@ PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
 
 # ====================================================================================
 # Setup Go
-GO_SUPPORTED_VERSIONS = 1.16
 
 # Set a sane default so that the nprocs calculation below is less noisy on the initial
 # loading of this file
