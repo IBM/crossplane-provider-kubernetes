@@ -99,9 +99,9 @@ func main() {
 		Version:  "v1",
 		Resource: "configmaps",
 	})
-		stopper := make(chan struct{})
-		defer close(stopper)
-		// Handle each update causing the pod to restart.
+	stopper := make(chan struct{})
+	defer close(stopper)
+	// Handle each update causing the pod to restart.
 	handlers := ca.ResourceEventHandlerFuncs{
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			if newObj.(*unstructured.Unstructured).GetName() == nssCM {
