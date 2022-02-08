@@ -93,7 +93,7 @@ func main() {
 	dc, err := dynamic.NewForConfig(cfg)
 	kingpin.FatalIfError(err, "Cannot create client for observing NamespaceScope ConfigMap")
 
-	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dc, 0, "ibm-common-services", nil)
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dc, 0, watchNamespace, nil)
 	informer := factory.ForResource(schema.GroupVersionResource{
 		Group:    "",
 		Version:  "v1",
@@ -135,7 +135,7 @@ func namespacesFromNssConfigMap(cfn client.Client, watchNamespace string, nssCM 
 	var namespaces []string
 	cm := &unstructured.Unstructured{}
 	cm.SetGroupVersionKind(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"})
-	if err := cfn.Get(context.Background(), types.NamespacedName{Namespace: "ibm-common-services", Name: nssCM}, cm); err != nil {
+	if err := cfn.Get(context.Background(), types.NamespacedName{Namespace: watchNamespace, Name: nssCM}, cm); err != nil {
 		return namespaces, err
 	}
 	data := cm.Object["data"].(map[string]interface{})
