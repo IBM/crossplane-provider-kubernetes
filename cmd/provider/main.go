@@ -19,12 +19,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"os"
 	"path/filepath"
 
 	"gopkg.in/alecthomas/kingpin.v2"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -70,7 +70,7 @@ func main() {
 	// IBM Patch: reduce cluster permission
 	// we want to restrict cache to watch only a given list of namespaces
 	// instead of all (cluster scoped). List of namespaces is read
-	// from NamespaceScope resource, if it exists. Changes in this resource
+	// from NamespaceScope ConfigMap, if it exists. Changes in this ConfigMap
 	// should restart Provider's pod.
 	watchNamespace := os.Getenv("WATCH_NAMESPACE")
 	if watchNamespace == "" {
@@ -78,42 +78,43 @@ func main() {
 	}
 	// By default set at least watchNamespace
 	namespaces := []string{watchNamespace}
-	nssName := "common-service"
+	// Name of ConfigMap created by NamespaceScope Operator
+	// as the result of aggregating NamespaceScope custom resources
+	nssCM := "namespace-scope"
 
 	cfn, err := client.New(cfg, client.Options{})
-	kingpin.FatalIfError(err, "Cannot create client for reading NamespaceScope")
+	kingpin.FatalIfError(err, "Cannot create client for reading NamespaceScope ConfigMap")
 
-	nfn, err := namespacesFromNss(cfn, watchNamespace, nssName)
-	// Proceed with informer when no error found during NamespaceScope reading
-	if err == nil {
-		namespaces = append(namespaces, nfn...)
-		// Start informer to watch for changes in NamespaceScope resource
-		dc, err := dynamic.NewForConfig(cfg)
-		kingpin.FatalIfError(err, "Cannot create client for observing NamespaceScope")
+	nfn, err := namespacesFromNssConfigMap(cfn, watchNamespace, nssCM)
+	kingpin.FatalIfError(err, "Cannot read namespaces from NamespaceScope ConfigMap")
 
-		factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dc, 0, watchNamespace, nil)
-		informer := factory.ForResource(schema.GroupVersionResource{
-			Group:    "operator.ibm.com",
-			Version:  "v1",
-			Resource: "namespacescopes",
-		})
+	namespaces = append(namespaces, nfn...)
+	// Start informer to watch for changes in ConfigMap
+	dc, err := dynamic.NewForConfig(cfg)
+	kingpin.FatalIfError(err, "Cannot create client for observing NamespaceScope ConfigMap")
+
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dc, 0, "ibm-common-services", nil)
+	informer := factory.ForResource(schema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "configmaps",
+	})
 		stopper := make(chan struct{})
 		defer close(stopper)
 		// Handle each update causing the pod to restart.
-		handlers := ca.ResourceEventHandlerFuncs{
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				if newObj.(*unstructured.Unstructured).GetName() == nssName {
-					log.Debug("Observed NamespaceScope has been updated, restarting")
-					os.Exit(1)
-				}
-			},
-		}
-		informer.Informer().AddEventHandler(handlers)
-		go informer.Informer().Run(stopper)
-		log.Debug(fmt.Sprintf("Starting watch on namespaceScope %s", nssName))
+	handlers := ca.ResourceEventHandlerFuncs{
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			if newObj.(*unstructured.Unstructured).GetName() == nssCM {
+				log.Debug("Observed NamespaceScope ConfigMap has been updated, restarting")
+				os.Exit(1)
+			}
+		},
 	}
+	informer.Informer().AddEventHandler(handlers)
+	go informer.Informer().Run(stopper)
+	log.Debug(fmt.Sprintf("Starting watch on NamespaceScope ConfigMap %s", nssCM))
+
 	log.Debug(fmt.Sprintf("Creating multinamespaced cache with namespaces: %+q", namespaces))
-	// IBM Patch end: reduce cluster permission
 
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		LeaderElection:   *leaderElection,
@@ -121,6 +122,7 @@ func main() {
 		SyncPeriod:       syncInterval,
 		NewCache:         cache.MultiNamespacedCacheBuilder(namespaces),
 	})
+	// IBM Patch end: reduce cluster permission
 	kingpin.FatalIfError(err, "Cannot create controller manager")
 
 	rl := ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS)
@@ -129,26 +131,22 @@ func main() {
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
 }
 
-func namespacesFromNss(cfn client.Client, watchNamespace string, nssName string) ([]string, error) {
+func namespacesFromNssConfigMap(cfn client.Client, watchNamespace string, nssCM string) ([]string, error) {
 	var namespaces []string
-	nss := &unstructured.Unstructured{}
-	nss.SetGroupVersionKind(schema.GroupVersionKind{Version: "operator.ibm.com/v1", Kind: "NamespaceScope"})
-	if err := cfn.Get(context.Background(), types.NamespacedName{Namespace: watchNamespace, Name: nssName}, nss); err != nil {
-		if errors.IsNotFound(err) {
-			// If not found return empty array and no error to allow for further steps.
-			return namespaces, nil
-		}
-		// Block further steps because probably there is no such CustomResourceDefinition on the cluster.
+	cm := &unstructured.Unstructured{}
+	cm.SetGroupVersionKind(schema.GroupVersionKind{Version: "v1", Kind: "ConfigMap"})
+	if err := cfn.Get(context.Background(), types.NamespacedName{Namespace: "ibm-common-services", Name: nssCM}, cm); err != nil {
 		return namespaces, err
 	}
-	spec := nss.Object["spec"].(map[string]interface{})
-	members := spec["namespaceMembers"]
+	data := cm.Object["data"].(map[string]interface{})
+	members := data["namespaces"]
 	if members != nil {
-		for _, m := range members.([]interface{}) {
-			if m.(string) == watchNamespace {
+		ms := strings.Split(members.(string), ",")
+		for _, m := range ms {
+			if m == watchNamespace {
 				continue
 			}
-			namespaces = append(namespaces, m.(string))
+			namespaces = append(namespaces, m)
 		}
 	}
 	return namespaces, nil
