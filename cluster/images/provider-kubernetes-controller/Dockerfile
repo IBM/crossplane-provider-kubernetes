@@ -1,4 +1,4 @@
-FROM BASEIMAGE
+FROM hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/build-images/ubi8-minimal:latest
 
 ADD provider /usr/local/bin/crossplane-kubernetes-provider
 
