@@ -24,7 +24,7 @@ include ../../../build/makelib/common.mk
 #  Options
 IMAGE_NAME = provider-kubernetes
 IMAGE = $(BUILD_REGISTRY)/ibm-crossplane-$(IMAGE_NAME):$(VERSION)-$(ARCH)
-OSBASEIMAGE = scratch
+OSBASEIMAGE = hyc-cloud-private-edge-docker-local.artifactory.swg-devops.com/build-images/ubi8-minimal:latest
 include ../../../build/makelib/image.mk
 
 # ====================================================================================
