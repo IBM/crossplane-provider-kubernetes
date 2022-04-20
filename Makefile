@@ -40,6 +40,10 @@ PLATFORMS ?= linux_amd64 linux_ppc64le linux_s390x
 # loading of this file
 NPROCS ?= 1
 
+# Setup golang-ci version
+
+GOLANGCILINT_VERSION=1.45.0
+
 # each of our test suites starts a kube-apiserver and running many test suites in
 # parallel can lead to high CPU utilization. by default we reduce the parallelism
 # to half the number of CPU cores.
