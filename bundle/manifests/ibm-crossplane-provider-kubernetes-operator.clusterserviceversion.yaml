@@ -5,7 +5,7 @@ metadata:
     alm-examples: '[]'
     capabilities: Seamless Upgrades
     categories: Developer Tools
-    containerImage: quay.io/opencloudio/ibm-crossplane-provider-kubernetes-operator:1.7.0
+    containerImage: icr.io/cpopen/ibm-crossplane-provider-kubernetes-operator:1.7.0
     description: Operator installing CRDs, RBAC resources and deployment for Crossplane Kubernetes Provider
     operators.operatorframework.io/builder: operator-sdk-v1.3.0
     operators.operatorframework.io/operator-type: non-standalone
@@ -134,7 +134,7 @@ spec:
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.annotations['olm.targetNamespaces']
-                    image: quay.io/opencloudio/ibm-crossplane-provider-kubernetes-operator:1.7.0
+                    image: icr.io/cpopen/ibm-crossplane-provider-kubernetes-operator:1.7.0
                     imagePullPolicy: Always
                     name: ibm-crossplane-provider-kubernetes
                     resources:
@@ -249,4 +249,4 @@ spec:
   version: 1.7.0
   relatedImages:
     - name: IBM_CROSSPLANE_PROVIDER_KUBERNETES_OPERATOR_IMAGE
-      image: quay.io/opencloudio/ibm-crossplane-provider-kubernetes-operator:1.7.0
+      image: icr.io/cpopen/ibm-crossplane-provider-kubernetes-operator:1.7.0
