@@ -247,6 +247,7 @@ spec:
   provider:
     name: IBM
   version: 1.7.0
+  replaces: ibm-crossplane-provider-kubernetes-operator.v1.6.0
   relatedImages:
     - name: IBM_CROSSPLANE_PROVIDER_KUBERNETES_OPERATOR_IMAGE
       image: icr.io/cpopen/ibm-crossplane-provider-kubernetes-operator:1.7.0
