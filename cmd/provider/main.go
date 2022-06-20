@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
 
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -124,6 +125,7 @@ func main() {
 		LeaderElectionID: "crossplane-leader-election-provider-kubernetes",
 		SyncPeriod:       syncInterval,
 		NewCache:         cache.MultiNamespacedCacheBuilder(namespaces),
+		NewClient:        newClientWithoutLogs,
 	})
 	// IBM Patch end: reduce cluster permission
 	kingpin.FatalIfError(err, "Cannot create controller manager")
@@ -153,4 +155,18 @@ func namespacesFromNssConfigMap(cfn client.Client, watchNamespace string, nssCM 
 		}
 	}
 	return namespaces, nil
+}
+
+func newClientWithoutLogs(cache cache.Cache, config *rest.Config, options client.Options, uncachedObjects ...client.Object) (client.Client, error) {
+	config.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
+	c, err := client.New(config, options)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.NewDelegatingClient(client.NewDelegatingClientInput{
+		CacheReader:     cache,
+		Client:          c,
+		UncachedObjects: uncachedObjects,
+	})
 }
