@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/util/flowcontrol"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -33,6 +34,7 @@ func NewRESTConfig(kubeconfig []byte) (*rest.Config, error) {
 // NewKubeClient returns a kubernetes client given a secret with connection
 // information.
 func NewKubeClient(config *rest.Config) (client.Client, error) {
+	config.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
 	kc, err := client.New(config, client.Options{})
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create Kubernetes client")
