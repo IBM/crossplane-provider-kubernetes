@@ -24,6 +24,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/client-go/util/flowcontrol"
+
 	"gopkg.in/alecthomas/kingpin.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -82,6 +84,7 @@ func main() {
 	// as the result of aggregating NamespaceScope custom resources
 	nssCM := "namespace-scope"
 
+	cfg.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
 	cfn, err := client.New(cfg, client.Options{})
 	kingpin.FatalIfError(err, "Cannot create client for reading NamespaceScope ConfigMap")
 
