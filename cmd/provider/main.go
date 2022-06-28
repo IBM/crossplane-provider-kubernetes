@@ -157,6 +157,9 @@ func namespacesFromNssConfigMap(cfn client.Client, watchNamespace string, nssCM 
 	return namespaces, nil
 }
 
+// following function is modified DefaultNewClient function from
+// https://github.com/kubernetes-sigs/controller-runtime/blob/0a3dd2a36dd971ea2fdcb163b0457e6be0d315bd/pkg/cluster/cluster.go#L259
+// Change here is to pass new FakeAlwaysRateLimiter to effectively disable logging of requests being throttled.
 func newClientWithoutLogs(cache cache.Cache, config *rest.Config, options client.Options, uncachedObjects ...client.Object) (client.Client, error) {
 	config.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
 	c, err := client.New(config, options)
