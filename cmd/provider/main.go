@@ -24,6 +24,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/flowcontrol"
+
 	"gopkg.in/alecthomas/kingpin.v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -82,6 +85,7 @@ func main() {
 	// as the result of aggregating NamespaceScope custom resources
 	nssCM := "namespace-scope"
 
+	cfg.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
 	cfn, err := client.New(cfg, client.Options{})
 	kingpin.FatalIfError(err, "Cannot create client for reading NamespaceScope ConfigMap")
 
@@ -121,6 +125,7 @@ func main() {
 		LeaderElectionID: "crossplane-leader-election-provider-kubernetes",
 		SyncPeriod:       syncInterval,
 		NewCache:         cache.MultiNamespacedCacheBuilder(namespaces),
+		NewClient:        newClientWithoutLogs,
 	})
 	// IBM Patch end: reduce cluster permission
 	kingpin.FatalIfError(err, "Cannot create controller manager")
@@ -150,4 +155,21 @@ func namespacesFromNssConfigMap(cfn client.Client, watchNamespace string, nssCM 
 		}
 	}
 	return namespaces, nil
+}
+
+// following function is modified DefaultNewClient function from
+// https://github.com/kubernetes-sigs/controller-runtime/blob/0a3dd2a36dd971ea2fdcb163b0457e6be0d315bd/pkg/cluster/cluster.go#L259
+// Change here is to pass new FakeAlwaysRateLimiter to effectively disable logging of requests being throttled.
+func newClientWithoutLogs(cache cache.Cache, config *rest.Config, options client.Options, uncachedObjects ...client.Object) (client.Client, error) {
+	config.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
+	c, err := client.New(config, options)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.NewDelegatingClient(client.NewDelegatingClientInput{
+		CacheReader:     cache,
+		Client:          c,
+		UncachedObjects: uncachedObjects,
+	})
 }
