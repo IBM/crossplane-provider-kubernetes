@@ -160,6 +160,7 @@ spec:
             required:
             - credentials
             type: object
+            x-kubernetes-preserve-unknown-fields: true
           status:
             description: A ProviderConfigStatus reflects the observed state of a ProviderConfig.
             properties:
