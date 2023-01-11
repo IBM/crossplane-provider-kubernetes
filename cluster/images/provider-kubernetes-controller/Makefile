@@ -52,6 +52,8 @@ endif
 	@$(CONTAINER_CLI) $(BUILD_ARGS) \
 		--build-arg ARCH=$(ARCH) \
 		--build-arg TINI_VERSION=$(TINI_VERSION) \
+		--build-arg VCS_REF=$(VCS_REF) \
+		--build-arg VCS_URL=$(VCS_URL) \
 		-t $(IMAGE) \
 		$(IMAGE_TEMP_DIR) || $(FAIL)
 	@$(OK) $(CONTAINER_CLI) $(IMAGE)
