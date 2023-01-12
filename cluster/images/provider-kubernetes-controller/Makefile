@@ -18,6 +18,10 @@
 # Setup Project
 
 PLATFORMS := linux_amd64 linux_ppc64le linux_s390x
+
+VCS_URL = $(shell git config --get remote.origin.url)
+VCS_REF ?= $(shell git rev-parse HEAD)
+
 include ../../../build/makelib/common.mk
 
 
