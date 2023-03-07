@@ -6,7 +6,7 @@ import re
 BUNDLE_CSV_YAML = "./bundle/manifests/ibm-crossplane-provider-kubernetes-operator.clusterserviceversion.yaml"
 MANAGER_YAML = "./config/manager/manager.yaml"
 CSV_YAML = "./config/manifests/bases/ibm-crossplane-provider-kubernetes-operator.clusterserviceversion.yaml"
-# README = "./README.md"
+README = "./README.md"
 RELEASE_VERSION_FILE = "./RELEASE_VERSION"
 PREVIOUS_VERSION_FILE = "./PREVIOUS_VERSION"
 
