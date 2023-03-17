@@ -42,7 +42,7 @@ NPROCS ?= 1
 
 # Setup golang-ci version
 
-GOLANGCILINT_VERSION=1.45.0
+GOLANGCILINT_VERSION=1.51.2
 
 # each of our test suites starts a kube-apiserver and running many test suites in
 # parallel can lead to high CPU utilization. by default we reduce the parallelism
