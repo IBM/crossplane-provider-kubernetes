@@ -39,7 +39,7 @@ func Setup(mgr ctrl.Manager, l logging.Logger, rl workqueue.RateLimiter, _ time.
 	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind)
 
 	o := controller.Options{
-		RateLimiter: ratelimiter.NewDefaultManagedRateLimiter(rl),
+		RateLimiter: ratelimiter.NewController(),
 	}
 
 	of := resource.ProviderConfigKinds{
