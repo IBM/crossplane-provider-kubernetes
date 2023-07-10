@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/crossplane/crossplane-runtime v0.16.1
-	github.com/crossplane/crossplane-tools v0.0.0-20230327091744-4236bf732aa5
+	github.com/crossplane/crossplane-tools v0.0.0-20220310165030-1f43fc12793e
 	github.com/google/go-cmp v0.5.6
 	github.com/pkg/errors v0.9.1
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
