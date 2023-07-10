@@ -44,7 +44,7 @@ func (mg *Object) GetProviderReference() *xpv1.Reference {
 
 // GetPublishConnectionDetailsTo of this Object.
 func (mg *Object) GetPublishConnectionDetailsTo() *xpv1.PublishConnectionDetailsTo {
-  return mg.Spec.PublishConnectionDetailsTo
+	return mg.Spec.PublishConnectionDetailsTo
 }
 
 // GetWriteConnectionSecretToReference of this Object.
@@ -77,7 +77,7 @@ func (mg *Object) SetProviderReference(r *xpv1.Reference) {
 
 // SetPublishConnectionDetailsTo of this Object.
 func (mg *Object) SetPublishConnectionDetailsTo(r *xpv1.PublishConnectionDetailsTo) {
-  mg.Spec.PublishConnectionDetailsTo = r
+	mg.Spec.PublishConnectionDetailsTo = r
 }
 
 // SetWriteConnectionSecretToReference of this Object.
