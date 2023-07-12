@@ -10,5 +10,5 @@ guidelines and responsibilities for the steering committee and maintainers.
 
 ## Maintainers
 
-* Hasan Turken <hasan@upbound.io> ([turkenh](https://github.com/turkenh))
+* Jan Olszówka  ([Jan-Olszowka](https://github.com/Jan-Olszowka))
 
